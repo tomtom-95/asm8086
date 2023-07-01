@@ -5,7 +5,6 @@
 #include "asm8086_lexer.h"
 #include "asm8086.h"
 
-// TODO(if the lexer fail is because I have played with ';')
 int lexer(struct LexTok      **tok_spp,
           char               **pp_buf,
           struct LexTokLabel **lbl_spp,
@@ -19,7 +18,7 @@ int lexer(struct LexTok      **tok_spp,
         }
         else if (**pp_buf == ';')
         {
-            while (*(*pp_buf++) != '\n');
+            while (*((*pp_buf)++) != '\n');
             continue;
         }
         else

@@ -18,47 +18,30 @@ int set_p_comma(struct LexTok *p_tok_start)
     return 1;
 }
 
-// when a gen reg is find both in the dst and src operand -> d field set to 0
-// when a gen reg is find in the dst operand -> d field set to 0
-// when a gen reg is find in the src operand -> d field set to 1
-// when there is no reg gen: d bit is set with the opposite logic
-// mov 123, [3] has d bit set to 1
-
-// the problem comes for an instruction like mov cl, 12 : move register/memory to segment register
-// in this case I want to encode the instruction using rm/mod fields
-// pre codegen the inst_data.d is set to 1 (because a gen reg has been found in the dst operand position)
-// so rm/mod will look for data in the src operand position, that's the opposite of what I want
-// the problem comes from the fact that rm/mod can be used for encoding of eaddr, daddr and reg_gen
-// while I am treating them somewhat differently
-// I endowed the target instruction with an ImplD(1): that means when parsing rm field I will search in the src field
-// and I will find nothing because there is a bare num
-
-// start fresh, given only the output from the lexer and parser, what can be said about
-// REG, MOD, RM, D (value and position)?
-// Some instruction have an implicit order that must be captured
-// Other have an explicit D bit to be set
-// Is it better to have an ImplRegD and ImplRmD ?
-// ImplRegD will set inst_data.regd to 0 or 1
-// ImplRmD  will set inst_data.rmd to 0 or 1
-
-// is it always unambiguous the setting of regd and rmd?
-
-// case mov cl, 12
-// dst is a reg gen, src is an immediate
-// I will set both inst_data.regd = 1 and inst_data.rmd = 1
-// when I encounter the row I actually want to use
-// ImplD check -> ImplRmD(1), check inst_data.rmd and check consistency
-
-// case mov ax, bx
-// both src and dst are reg gen
-// set inst_data.regd = 0 and inst_data.rmd = 1
-
-
-
-int set_d(struct LexTok *p_tok_start)
+int set_rmd_regd(struct LexTok *p_tok_start)
 {
+    for (struct LexTok *p_tok = p_tok_start; p_tok -> id0 != TOK0_EOL; ++p_tok)
+    {
+        if (p_tok -> id0 == TOK0_LSQUARE_BR)
+        {
+            if (inst_data.p_comma - p_tok > 0)
+            {
+                inst_data.rmd  = 1;
+                inst_data.regd = 0;
+            }
+            else
+            {
+                inst_data.rmd  = 0;
+                inst_data.regd = 1;
+            }
+
+            return 0;
+        }
+    }
+
     struct LexTok *p_tok_reg_gen_dst = NULL;
     struct LexTok *p_tok_reg_gen_src = NULL;
+
     for (struct LexTok *p_tok = p_tok_start; p_tok -> id0 != TOK0_EOL; ++p_tok)
     {
         if (p_tok -> id0 == TOK0_REG_GEN)
@@ -71,23 +54,19 @@ int set_d(struct LexTok *p_tok_start)
     }
 
     if (p_tok_reg_gen_dst != NULL && p_tok_reg_gen_src != NULL)
-        inst_data.d = 0;
-    else if (p_tok_reg_gen_dst != NULL && p_tok_reg_gen_src == NULL)
-        inst_data.d = 1;
-    else if (p_tok_reg_gen_dst == NULL && p_tok_reg_gen_src != NULL)
-        inst_data.d = 0;
-    else if (p_tok_reg_gen_dst == NULL && p_tok_reg_gen_src == NULL)
     {
-        for (struct LexTok *p_tok = p_tok_start; p_tok -> id0 != TOK0_EOL; ++p_tok)
-        {
-            if (p_tok -> id0 == TOK0_LSQUARE_BR)
-            {
-                if (inst_data.p_comma - p_tok > 0)
-                    inst_data.d = 0;
-                else
-                    inst_data.d = 1;
-            }
-        }
+        inst_data.rmd  = 1;
+        inst_data.regd = 0;
+    }
+    else if (p_tok_reg_gen_dst != NULL && p_tok_reg_gen_src == NULL)
+    {
+        inst_data.rmd  = 1;
+        inst_data.regd = 1;
+    }
+    else if (p_tok_reg_gen_dst == NULL && p_tok_reg_gen_src != NULL)
+    {
+        inst_data.rmd  = 0; 
+        inst_data.regd = 0;
     }
 
     return 0;
@@ -133,7 +112,7 @@ int set_rm(struct LexTok *p_tok_start)
         }
     }
 
-    struct LexTok *p_tok_reg_gen = get_reg_gen(p_tok_start, INST_RM);
+    struct LexTok *p_tok_reg_gen = get_reg_gen_for_rm_field(p_tok_start);
     if (p_tok_reg_gen == NULL)
         return 1;
 
@@ -149,39 +128,35 @@ int set_rm(struct LexTok *p_tok_start)
     return 1;
 }
 
-struct LexTok *get_reg_gen(struct LexTok    *p_tok_start,
-                           enum InstFieldId  field_id)
+struct LexTok *get_reg_gen_for_rm_field(struct LexTok *p_tok_start)
 {
     struct LexTok *p_tok_reg_gen = NULL;
 
     if (inst_data.operand_cnt == 2)
     {
-        if ((inst_data.d == 0 && field_id == INST_REG)      ||
-            (inst_data.d == 0 && field_id == INST_ImplReg))
-        {
-            p_tok_reg_gen = get_reg_gen_src(inst_data.p_comma);
-        }
-        else if ((inst_data.d == 1 && field_id == INST_REG)      ||
-                 (inst_data.d == 1 && field_id == INST_ImplReg))
-        {
-            p_tok_reg_gen = get_reg_gen_dst(p_tok_start);
-        }
-        else if (inst_data.d == 0 && field_id == INST_RM)
-        {
-            p_tok_reg_gen = get_reg_gen_dst(p_tok_start);
-            if (p_tok_reg_gen == NULL)
-                p_tok_reg_gen = get_reg_gen_src(p_tok_start);
-        }
-        else if (inst_data.d == 1 && field_id == INST_RM)
-        {
-            p_tok_reg_gen = get_reg_gen_src(inst_data.p_comma);
-            if (p_tok_reg_gen == NULL)
-                p_tok_reg_gen = get_reg_gen_dst(p_tok_start);
-        }
+        p_tok_reg_gen = (inst_data.rmd == 0) ? get_reg_gen_src(inst_data.p_comma) :
+                                               get_reg_gen_dst(p_tok_start);
     }
-    else if (inst_data.operand_cnt == 1)
+    else
     {
-        printf("TODO: one operand case\n");
+        printf("TODO: get_reg_gen_for_rm_field single operand\n");
+    }
+
+    return p_tok_reg_gen;
+}
+
+struct LexTok *get_reg_gen_for_reg_field(struct LexTok *p_tok_start)
+{
+    struct LexTok *p_tok_reg_gen = NULL;
+
+    if (inst_data.operand_cnt == 2)
+    {
+        p_tok_reg_gen = (inst_data.regd == 0) ? get_reg_gen_src(inst_data.p_comma) :
+                                                get_reg_gen_dst(p_tok_start);
+    }
+    else
+    {
+        printf("TODO: get_reg_gen_for_reg_field single operand\n");
     }
 
     return p_tok_reg_gen;
@@ -213,16 +188,17 @@ int codegen(struct ParserNode *p_node_start,
             struct LexTok     *p_tok_start,
             struct InstEnc    *encoding)
 {
-    u64 *inst_enc_stack = malloc(LEN_MAX_INST_STACK * sizeof(*inst_enc_stack));
-    u64 *inst_enc_sp    = inst_enc_stack;
+    u64 inst_enc_stack[LEN_MAX_INST_STACK] = {0};
+    u64 *inst_enc_sp = inst_enc_stack;
 
     if (inst_data.operand_cnt == 2)
-        assert(set_p_comma(p_tok_start) == 0);
-        set_d(p_tok_start);
+    {
+        set_p_comma(p_tok_start);
+        set_rmd_regd(p_tok_start);
+    }
 
     set_mod();
-    if (set_rm(p_tok_start) != 0)
-        return 1;
+    set_rm(p_tok_start);
 
     size_t inst_idx = 0;
     while (inst_data.mnemonic != inst_table[inst_idx].id_mnemonic)
@@ -238,7 +214,7 @@ int codegen(struct ParserNode *p_node_start,
     }
 
     if (inst_enc_sp == inst_enc_stack)
-        return free(inst_enc_stack), 1;
+        return 1;
 
     for (u64 *p_enc = inst_enc_stack; p_enc != inst_enc_sp; ++p_enc)
         printf("%llx\n", *p_enc);
@@ -259,8 +235,6 @@ int codegen(struct ParserNode *p_node_start,
     }
 
     printf("chosen encoding = %llx\n", encoding -> enc);
-
-    free(inst_enc_stack);
 
     return 0;
 }
@@ -285,12 +259,19 @@ int instgen(struct Instruction   inst,
         }
         case INST_D:
         {
-            *p_inst_enc = (*p_inst_enc << size) | inst_data.d;
+            *p_inst_enc = (*p_inst_enc << size) | inst_data.regd;
             break;
         }
-        case INST_ImplD:
+        case INST_ImplRegD:
         {
-            if (inst_data.d != value)
+            if (inst_data.regd != value)
+                return 1;
+
+            break;
+        }
+        case INST_ImplRmD:
+        {
+            if (inst_data.rmd != value)
                 return 1;
 
             break;
@@ -307,7 +288,7 @@ int instgen(struct Instruction   inst,
         }
         case INST_REG:
         {
-            struct LexTok *p_tok_reg_gen = get_reg_gen(p_tok_start, INST_REG);
+            struct LexTok *p_tok_reg_gen = get_reg_gen_for_reg_field(p_tok_start);
             if (p_tok_reg_gen == NULL)
                 return 1;
 
@@ -324,7 +305,7 @@ int instgen(struct Instruction   inst,
         }
         case INST_ImplReg:
         {
-            struct LexTok *p_tok_reg_gen = get_reg_gen(p_tok_start, INST_ImplReg);
+            struct LexTok *p_tok_reg_gen = get_reg_gen_for_reg_field(p_tok_start);
             if (p_tok_reg_gen == NULL)
                 return 1;
             

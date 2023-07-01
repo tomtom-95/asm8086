@@ -183,7 +183,8 @@ enum InstFieldId
 #define ENTRY(id, ...) INST_##id,
     OPCODE(1, ...)
     OPCODE(2, ...)
-    ImplD(...)
+    ImplRegD(...)
+    ImplRmD(...)
     ImplReg(...)
     TABLE_INST_FIELDS
 #undef ENTRY
@@ -213,15 +214,16 @@ struct InstructionData
     enum IdLexTok1     reg_base;
     enum IdLexTok1     reg_idx;
     enum IdLexTok1     seg_ovr;
-    u8   d;
-    u8   w;
-    u8   mod;
-    u8   rm;
-    u8   sr;
-    long disp; 
-    long daddr;
-    long imm;
-    u8   operand_cnt;
+    u8                 regd;
+    u8                 rmd;
+    u8                 w;
+    u8                 mod;
+    u8                 rm;
+    u8                 sr;
+    long               disp; 
+    long               daddr;
+    long               imm;
+    u8                 operand_cnt;
 };
 
 static struct InstructionData inst_data = {0};

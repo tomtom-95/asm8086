@@ -13,14 +13,13 @@ int instgen(struct Instruction  inst,
             struct LexTok      *p_tok_start,
             u64                *p_inst_enc);
 
-struct LexTok *get_reg_gen(struct LexTok    *p_tok_start,
-                           enum InstFieldId  field_id);
-
+struct LexTok *get_reg_gen_for_rm_field(struct LexTok *p_tok_start);
+struct LexTok *get_reg_gen_for_reg_field(struct LexTok *p_tok_start);
 struct LexTok *get_reg_gen_src(struct LexTok *p_tok_comma);
 struct LexTok *get_reg_gen_dst(struct LexTok *p_tok_start);
 
 int set_p_comma(struct LexTok *p_tok_start);
-int set_d(struct LexTok *p_tok_start);
+int set_rmd_regd(struct LexTok *p_tok_start);
 int set_rm(struct LexTok *p_tok_start);
 int set_mod(void);
 
