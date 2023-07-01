@@ -127,7 +127,6 @@
 #define D                 ENTRY(D,    0,   1)
 #define W                 ENTRY(W,    0,   1)
 #define END               ENTRY(END,  0,   0)
-#define MOV               ENTRY(MOV,  0,   0)
 
 #define TABLE_INST_FIELDS \
     MOD  \
@@ -140,5 +139,15 @@
     D    \
     W    \
     END 
+
+#define TABLE_INST \
+    INST(MOV, {OPCODE(1,100010), D, W, MOD, REG, RM, DISP, END}) \
+    INST(MOV, {OPCODE(1,1100011), ImplD(1), W, MOD, OPCODE(2,000), RM, DISP, IMM, END}) \
+    INST(MOV, {OPCODE(1,1011), ImplD(1), W, REG, IMM, END}) \
+    INST(MOV, {OPCODE(1,1010000), ImplD(1), ImplReg(000), W, ADDR, END}) \
+    INST(MOV, {OPCODE(1,1010001), ImplD(0), ImplReg(000), W, ADDR, END}) \
+    INST(MOV, {OPCODE(1,10001110), ImplD(1), MOD, OPCODE(2,0), SR, RM, DISP, END}) \
+    INST(MOV, {OPCODE(1,10001100), ImplD(0), MOD, OPCODE(2,0), SR, RM, DISP, END}) \
+    INST(NONE, {0})
 
 #endif // TABLES_H

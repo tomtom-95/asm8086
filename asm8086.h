@@ -233,16 +233,11 @@ struct InstEnc
 };
 
 struct Instruction inst_table[] = {
+#define INST(mnemonic, ...) {TOK1_##mnemonic, __VA_ARGS__},
 #define ENTRY(id, value, len) {INST_##id, 0b##value, len}
-    {TOK1_MOV, {OPCODE(1,100010), D, W, MOD, REG, RM, DISP, END}}, 
-    {TOK1_MOV, {OPCODE(1,1100011), ImplD(1), W, MOD, OPCODE(2,000), RM, DISP, IMM, END}}, 
-    {TOK1_MOV, {OPCODE(1,1011), ImplD(1), W, REG, IMM, END}},
-    {TOK1_MOV, {OPCODE(1,1010000), ImplD(1), ImplReg(000), W, ADDR, END}},
-    {TOK1_MOV, {OPCODE(1,1010001), ImplD(0), ImplReg(000), W, ADDR, END}},
-    {TOK1_MOV, {OPCODE(1,10001110), ImplD(1), MOD, OPCODE(2,0), SR, RM, DISP, END}},
-    {TOK1_MOV, {OPCODE(1,10001100), ImplD(0), MOD, OPCODE(2,0), SR, RM, DISP, END}},
-    {TOK1_NONE, {0}},
+    TABLE_INST
 #undef ENTRY
+#undef INST
 };
 
 #endif // ASM8086_H
