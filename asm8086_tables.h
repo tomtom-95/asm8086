@@ -2,48 +2,48 @@
 #define TABLES_H
 
 #define TABLE_ALL \
-    ENTRY     (BITS,       BITS,         bits)       \
-    ENTRY     (MNEMONIC,   MOV,          mov)        \
-    ENTRY_ALT (MNEMONIC,   PUSH,         push)       \
-    ENTRY_ALT (MNEMONIC,   POP,          pop)        \
-    ENTRY     (REG_GEN,    AX,           ax)         \
-    ENTRY_ALT (REG_GEN,    AH,           ah)         \
-    ENTRY_ALT (REG_GEN,    AL,           al)         \
-    ENTRY_ALT (REG_GEN,    BX,           bx)         \
-    ENTRY_ALT (REG_GEN,    BH,           bh)         \
-    ENTRY_ALT (REG_GEN,    BL,           bl)         \
-    ENTRY_ALT (REG_GEN,    CX,           cx)         \
-    ENTRY_ALT (REG_GEN,    CH,           ch)         \
-    ENTRY_ALT (REG_GEN,    CL,           cl)         \
-    ENTRY_ALT (REG_GEN,    DX,           dx)         \
-    ENTRY_ALT (REG_GEN,    DH,           dh)         \
-    ENTRY_ALT (REG_GEN,    DL,           dl)         \
-    ENTRY_ALT (REG_GEN,    SP,           sp)         \
-    ENTRY_ALT (REG_GEN,    BP,           bp)         \
-    ENTRY_ALT (REG_GEN,    SI,           si)         \
-    ENTRY_ALT (REG_GEN,    DI,           di)         \
-    ENTRY     (REG_SEG,    ES,           es)         \
-    ENTRY_ALT (REG_SEG,    CS,           cs)         \
-    ENTRY_ALT (REG_SEG,    SS,           ss)         \
-    ENTRY_ALT (REG_SEG,    DS,           ds)         \
-    ENTRY     (PREFIX,     LOCK,         lock)       \
-    ENTRY_ALT (PREFIX,     REP,          rep)        \
-    ENTRY_ALT (PREFIX,     REPE,         repe)       \
-    ENTRY_ALT (PREFIX,     REPZ,         repz)       \
-    ENTRY_ALT (PREFIX,     REPNE,        repne)      \
-    ENTRY_ALT (PREFIX,     REPNZ,        repnz)      \
-    ENTRY     (OPR_MATH,   PLUS,         plus)       \
-    ENTRY_ALT (OPR_MATH,   MINUS,        minus)      \
-    ENTRY     (OPR_SIZE,   BYTE,         byte)       \
-    ENTRY_ALT (OPR_SIZE,   WORD,         word)       \
-    ENTRY     (LABEL,      LABEL,        label)      \
-    ENTRY     (NUM,        NUM,          num)        \
-    ENTRY_ALT (NUM,        NUM_ZERO,     num_zero)   \
-    ENTRY     (COLON,      COLON,        colon)      \
-    ENTRY     (COMMA,      COMMA,        comma)      \
-    ENTRY     (LSQUARE_BR, LSQUARE_BR,   lsquare_br) \
-    ENTRY     (RSQUARE_BR, RSQUARE_BR,   rsquare_br) \
-    ENTRY     (EOL,        EOL,          eol)
+    ENTRY     (BITS,       BITS,       bits)       \
+    ENTRY     (MNEMONIC,   MOV,        mov)        \
+    ENTRY_ALT (MNEMONIC,   PUSH,       push)       \
+    ENTRY_ALT (MNEMONIC,   POP,        pop)        \
+    ENTRY     (REG_GEN,    AX,         ax)         \
+    ENTRY_ALT (REG_GEN,    AH,         ah)         \
+    ENTRY_ALT (REG_GEN,    AL,         al)         \
+    ENTRY_ALT (REG_GEN,    BX,         bx)         \
+    ENTRY_ALT (REG_GEN,    BH,         bh)         \
+    ENTRY_ALT (REG_GEN,    BL,         bl)         \
+    ENTRY_ALT (REG_GEN,    CX,         cx)         \
+    ENTRY_ALT (REG_GEN,    CH,         ch)         \
+    ENTRY_ALT (REG_GEN,    CL,         cl)         \
+    ENTRY_ALT (REG_GEN,    DX,         dx)         \
+    ENTRY_ALT (REG_GEN,    DH,         dh)         \
+    ENTRY_ALT (REG_GEN,    DL,         dl)         \
+    ENTRY_ALT (REG_GEN,    SP,         sp)         \
+    ENTRY_ALT (REG_GEN,    BP,         bp)         \
+    ENTRY_ALT (REG_GEN,    SI,         si)         \
+    ENTRY_ALT (REG_GEN,    DI,         di)         \
+    ENTRY     (REG_SEG,    ES,         es)         \
+    ENTRY_ALT (REG_SEG,    CS,         cs)         \
+    ENTRY_ALT (REG_SEG,    SS,         ss)         \
+    ENTRY_ALT (REG_SEG,    DS,         ds)         \
+    ENTRY     (PREFIX,     LOCK,       lock)       \
+    ENTRY_ALT (PREFIX,     REP,        rep)        \
+    ENTRY_ALT (PREFIX,     REPE,       repe)       \
+    ENTRY_ALT (PREFIX,     REPZ,       repz)       \
+    ENTRY_ALT (PREFIX,     REPNE,      repne)      \
+    ENTRY_ALT (PREFIX,     REPNZ,      repnz)      \
+    ENTRY     (OPR_MATH,   PLUS,       plus)       \
+    ENTRY_ALT (OPR_MATH,   MINUS,      minus)      \
+    ENTRY     (OPR_SIZE,   BYTE,       byte)       \
+    ENTRY_ALT (OPR_SIZE,   WORD,       word)       \
+    ENTRY     (LABEL,      LABEL,      label)      \
+    ENTRY     (NUM,        NUM,        num)        \
+    ENTRY_ALT (NUM,        NUM_ZERO,   num_zero)   \
+    ENTRY     (COLON,      COLON,      colon)      \
+    ENTRY     (COMMA,      COMMA,      comma)      \
+    ENTRY     (LSQUARE_BR, LSQUARE_BR, lsquare_br) \
+    ENTRY     (RSQUARE_BR, RSQUARE_BR, rsquare_br) \
+    ENTRY     (EOL,        EOL,        eol)
 
 #define TABLE_PREFIX \
     ENTRY (LOCK,  11110000) \

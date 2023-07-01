@@ -16,6 +16,9 @@ int instgen(struct Instruction  inst,
 struct LexTok *get_reg_gen(struct LexTok    *p_tok_start,
                            enum InstFieldId  field_id);
 
+struct LexTok *get_reg_gen_src(struct LexTok *p_tok_comma);
+struct LexTok *get_reg_gen_dst(struct LexTok *p_tok_start);
+
 int set_p_comma(struct LexTok *p_tok_start);
 int set_d(struct LexTok *p_tok_start);
 int set_rm(struct LexTok *p_tok_start);

@@ -1,2 +1,1 @@
-mov ax, bx
-mov es, [+123]
+mov cl, 12
