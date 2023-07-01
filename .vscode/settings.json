@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "stdbool.h": "c",
+        "stdio.h": "c",
+        "asm8086_parser.h": "c",
+        "asm8086_helper.h": "c",
+        "asm8086.h": "c",
+        "asm8086_lexer.h": "c"
+    },
+    "C_Cpp.default.compilerPath": "/usr/bin/clang",
+}

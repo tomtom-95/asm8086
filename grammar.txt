@@ -1,0 +1,62 @@
+line_
+    : line EOL
+
+line
+    | BITS NUM
+    | lbl 
+    | inst
+
+lbl
+    : LABEL COLON
+
+inst
+    : mnemonic_ operand_ COMMA operand_
+    | mnemonic_ operand_
+    | mnemonic_
+
+mnemonic_
+    : prefix* mnemonic
+
+operand_
+    : opr_prefix* operand
+
+opr_prefix
+    : opr_size
+    | seg_ovr
+
+opr_size
+    : BYTE | WORD
+
+seg_ovr
+    : reg_seg COLON
+
+operand
+    : reg_gen
+    | eaddr__
+    | reg_seg
+    | imm
+
+imm
+    : opr_math? (NUM | NUM_ZERO)
+
+reg_gen
+    : AX | AL | AH | BX | BL | BH | CX | CL | CH | DX | DL | DH | SP | BP | SI | DI
+
+reg_seg
+    : CS | DS | SS | ES
+
+opr_math
+    : PLUS | MINUS
+
+prefix
+    : LOCK
+    | REP
+    | REPE
+    | REPNE
+    | REPZ
+    | REPNZ
+
+mnemonic
+    : MOV
+    | PUSH
+    | POP
