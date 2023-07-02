@@ -71,7 +71,7 @@ int main(int argc, char **argv)
         else
             printf("parser error\n");
 
-        print_node_stack(p_node_start, node_sp);
+        // print_node_stack(p_node_start, node_sp);
 
         struct InstEnc encoding = {0};
         if (codegen(p_node_start, p_tok_start, &encoding) == 0)

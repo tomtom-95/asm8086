@@ -54,21 +54,21 @@
     ENTRY (REPNZ, 11110010)
 
 #define TABLE_REG_GEN_ENCODING \
+    ENTRY (AL, 000, 0) \
     ENTRY (AX, 000, 1) \
-    ENTRY (AH, 000, 0) \
-    ENTRY (AL, 100, 0) \
-    ENTRY (BX, 011, 1) \
-    ENTRY (BH, 011, 0) \
-    ENTRY (BL, 111, 0) \
-    ENTRY (CX, 001, 1) \
-    ENTRY (CH, 101, 0) \
     ENTRY (CL, 001, 0) \
-    ENTRY (DX, 010, 1) \
-    ENTRY (DH, 110, 0) \
+    ENTRY (CX, 001, 1) \
     ENTRY (DL, 010, 0) \
+    ENTRY (DX, 010, 1) \
+    ENTRY (BL, 011, 0) \
+    ENTRY (BX, 011, 1) \
+    ENTRY (AH, 100, 0) \
     ENTRY (SP, 100, 1) \
+    ENTRY (CH, 101, 0) \
     ENTRY (BP, 101, 1) \
+    ENTRY (DH, 110, 0) \
     ENTRY (SI, 110, 1) \
+    ENTRY (BH, 111, 0) \
     ENTRY (DI, 111, 1)
 
 #define TABLE_REG_SEG_ENCODING \

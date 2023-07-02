@@ -209,6 +209,8 @@ struct InstructionData
     struct ParserNode *p_daddr;
     struct ParserNode *p_imm;
     struct LexTok     *p_comma;
+    struct LexTok     *p_reg_gen_dst;
+    struct LexTok     *p_reg_gen_src;
     enum IdLexTok1     mnemonic;
     enum IdLexTok1     reg_seg;
     enum IdLexTok1     reg_base;

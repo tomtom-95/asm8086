@@ -233,12 +233,28 @@ int parser_seg_ovr(struct ParserNode **pp_node, struct LexTok **pp_tok)
 int parser_operand(struct ParserNode **pp_node, struct LexTok **pp_tok)
 {
     struct ParserNode *p_reset_node = *pp_node;
-    struct LexTok     *p_reset_tok = *pp_tok;
+    struct LexTok *p_reset_tok = *pp_tok;
 
     (*((*pp_node)++)).id = NODE_OPERAND;
 
     if (parser_reg_gen(pp_node, pp_tok) == 0)
+    {
+        bool reg_gen_is_dst = false;
+        for (struct LexTok *p_tok = *pp_tok; p_tok -> id0 != TOK0_EOL; ++p_tok)
+        {
+            if (p_tok -> id0 == TOK0_COMMA)
+            {
+                inst_data.p_reg_gen_dst = *pp_tok - 1;
+                reg_gen_is_dst = true;
+                break;
+            }
+        }
+
+        if (!reg_gen_is_dst)
+            inst_data.p_reg_gen_src = *pp_tok - 1;
+
         return 0;
+    }
     
     if (parser_eaddr__(pp_node, pp_tok) == 0)
         return 0;

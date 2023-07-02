@@ -227,10 +227,10 @@ int codegen(struct ParserNode *p_node_start,
         while ((*p_enc >> (inst_len * 8)) != 0)
             ++inst_len;
         
-        if (inst_len < encoding -> len)
+        if (inst_len < (encoding -> len))
         {
             encoding -> enc = *p_enc;
-            encoding -> len = inst_len;
+            encoding -> len =  inst_len;
         }
     }
 
@@ -244,6 +244,22 @@ int instgen(struct Instruction   inst,
             struct LexTok       *p_tok_start,
             u64                 *p_inst_enc)
 {
+    if (inst_data.p_imm != NULL)
+    {
+        bool imm_field_present = false;
+        for (size_t idx = 0; inst.fields[idx].id != INST_END; ++idx)
+        {
+            if (inst.fields[idx].id == INST_IMM)
+            {
+                imm_field_present = true;
+                break; 
+            }
+        }
+
+        if (!imm_field_present)
+            return 1;
+    }
+
     for (size_t idx = 0; inst.fields[idx].id != INST_END; ++idx)
     {
         u8 size  = inst.fields[idx].size;
