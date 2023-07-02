@@ -15,6 +15,7 @@ void get_basename(const char *filename, char *basename)
     size_t len = strlen(filename) - strlen(extension) + 1;
 
     strlcpy(basename, filename, len);
+    strlcat(basename, ".bin", LEN_MAX_FILENAME);
 }
 
 void write_inst_to_file(struct InstEnc inst, FILE* file)

@@ -417,7 +417,6 @@ int parser_eaddr__(struct ParserNode **pp_node, struct LexTok **pp_tok)
         }
     }
 
-    inst_data.p_eaddr__ = NULL;
     parser_backtrack(pp_node, p_reset_node, pp_tok, p_reset_tok);
     return 1;
 }

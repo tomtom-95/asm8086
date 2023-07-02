@@ -11,6 +11,12 @@
 #include "asm8086_parser.c"
 #include "asm8086_codegen.c"
 
+// NOTE(saviomerda)
+// something strange with diff utility
+// with instruction : mov [bp + di], byte 7 
+// I can see that I generate the correct instruction
+// if I try to compare my generated binary and nasm generated binary with diff
+// it complain about no newline at end of file (no complain with instruction tested before)
 int main(int argc, char **argv)
 {
     FILE *asm_fp = fopen(argv[1], "r");

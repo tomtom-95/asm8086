@@ -56,5 +56,5 @@ dkms.conf
 
 # Project binary
 asm8086
-test_minimal
-test_minimal_nasm
+test_minimal.bin
+test_minimal_nasm.bin
