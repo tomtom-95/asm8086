@@ -286,7 +286,10 @@ int parser_reg_gen(struct ParserNode **pp_node, struct LexTok **pp_tok)
         for (size_t i = 0; i < ArrayCount(id_reg_gen); ++i)
         {
             if ((**pp_tok).id1 == id_reg_gen[i])
+            {
                 inst_data.w = wid_reg_gen[i];
+                break;
+            }
         }
 
         parser_add_terminal(pp_node, pp_tok);
@@ -498,11 +501,9 @@ int parser_eaddr(struct ParserNode **pp_node, struct LexTok **pp_tok)
 
     parser_backtrack(pp_node, p_reset_node + 1, pp_tok, p_reset_tok);
 
-    if ((**pp_tok).id1 == TOK1_BX)
+    if (parser_reg_base(pp_node, pp_tok) == 0)
     {
-        inst_data.reg_base = TOK1_BX;
-        parser_add_terminal(pp_node, pp_tok);
-        parser_signed_zero(pp_node, pp_tok); 
+        parser_signed_zero(pp_node, pp_tok);
         return 0;
     }
 

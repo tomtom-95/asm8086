@@ -130,58 +130,30 @@ int set_rm(struct LexTok *p_tok_start)
 
 struct LexTok *get_reg_gen_for_rm_field(struct LexTok *p_tok_start)
 {
-    struct LexTok *p_tok_reg_gen = NULL;
-
     if (inst_data.operand_cnt == 2)
     {
-        p_tok_reg_gen = (inst_data.rmd == 0) ? get_reg_gen_src(inst_data.p_comma) :
-                                               get_reg_gen_dst(p_tok_start);
+        return (inst_data.rmd == 0) ? inst_data.p_reg_gen_src:
+                                      inst_data.p_reg_gen_dst;
     }
     else
     {
         printf("TODO: get_reg_gen_for_rm_field single operand\n");
+        return NULL;
     }
-
-    return p_tok_reg_gen;
 }
 
 struct LexTok *get_reg_gen_for_reg_field(struct LexTok *p_tok_start)
 {
-    struct LexTok *p_tok_reg_gen = NULL;
-
     if (inst_data.operand_cnt == 2)
     {
-        p_tok_reg_gen = (inst_data.regd == 0) ? get_reg_gen_src(inst_data.p_comma) :
-                                                get_reg_gen_dst(p_tok_start);
+        return (inst_data.regd == 0) ? inst_data.p_reg_gen_src:
+                                       inst_data.p_reg_gen_dst;
     }
     else
     {
         printf("TODO: get_reg_gen_for_reg_field single operand\n");
+        return NULL;
     }
-
-    return p_tok_reg_gen;
-}
-
-struct LexTok *get_reg_gen_src(struct LexTok *p_tok_comma)
-{
-    for (struct LexTok *p_tok = p_tok_comma; p_tok -> id0 != TOK0_EOL; ++p_tok)
-    {
-        if (p_tok -> id0 == TOK0_REG_GEN)
-            return p_tok;
-    }
-
-    return NULL;
-}
-
-struct LexTok *get_reg_gen_dst(struct LexTok *p_tok_start)
-{
-    for (struct LexTok *p_tok = p_tok_start; p_tok -> id0 != TOK0_COMMA; ++p_tok)
-    {
-        if (p_tok -> id0 == TOK0_REG_GEN)
-            return p_tok;
-    }
-
-    return NULL;
 }
 
 int codegen(struct ParserNode *p_node_start,
