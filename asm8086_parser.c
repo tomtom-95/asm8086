@@ -203,6 +203,7 @@ int parser_opr_size(struct ParserNode **pp_node, struct LexTok **pp_tok)
         else
             inst_data.w = 1;
 
+        parser_add_terminal(pp_node, pp_tok);
         return 0;
     }
 

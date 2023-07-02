@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 
         struct InstEnc encoding = {0};
         if (codegen(p_node_start, p_tok_start, &encoding) == 0)
-            fwrite(&(encoding.enc), encoding.len, 1, bin_fp);
+            write_inst_to_file(encoding, bin_fp);
         else
             printf("codegen error\n");
     }

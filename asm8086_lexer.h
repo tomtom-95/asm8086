@@ -11,10 +11,10 @@ int lexer_line(struct LexTok      **tok_spp,
                struct LexTokLabel **lbl_spp,
                struct LexTokNum   **num_spp);
 
-int lexer_num(char **pp_buf,
-              struct LexTok **pp_tok,
+int lexer_num(char             **pp_buf,
+              struct LexTok    **pp_tok,
               struct LexTokNum **num_spp,
-              const char sign[2]);
+              const char         sign[2]);
 
 void skip_whitespaces(char **pp_buf);
 void skip_comment(char **pp_buf);

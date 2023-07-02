@@ -1,1 +1,1 @@
-mov dx, [bp]
+mov [bp + di], byte 7

@@ -80,9 +80,19 @@ int set_mod(void)
         return 0;
     }
 
-    if (inst_data.p_daddr != NULL || inst_data.disp == 0)
+    if (inst_data.p_daddr != NULL)
     {
         inst_data.mod = 0b00;
+        return 0;
+    }
+    
+    if (inst_data.p_daddr == NULL && inst_data.disp == 0)
+    {
+        if (inst_data.reg_base == TOK1_BP && inst_data.reg_idx == TOK1_NONE)
+            inst_data.mod = 0b01;
+        else
+            inst_data.mod = 0b00;
+
         return 0;
     }
 
@@ -204,6 +214,9 @@ int codegen(struct ParserNode *p_node_start,
             encoding -> enc = *p_enc;
             encoding -> len =  inst_len;
         }
+
+        printf("encoding -> enc = %llx\n", encoding -> enc);
+        printf("encoding -> len = %d\n", encoding -> len);
     }
 
     printf("chosen encoding = %llx\n", encoding -> enc);
@@ -335,8 +348,11 @@ int instgen(struct Instruction   inst,
             {
             case 0b00:
             {
-                u64 daddr_little_endian = ((u64)inst_data.daddr) >> 8 | ((inst_data.daddr << 8) & 0xff00);
-                *p_inst_enc = (*p_inst_enc << 16) | daddr_little_endian;
+                if (inst_data.p_daddr != NULL)
+                {
+                    u64 daddr_little_endian = ((u64)inst_data.daddr) >> 8 | ((inst_data.daddr << 8) & 0xff00);
+                    *p_inst_enc = (*p_inst_enc << 16) | daddr_little_endian;
+                }
                 break;
             }
             case 0b01:
@@ -376,7 +392,7 @@ int instgen(struct Instruction   inst,
         }
         case INST_ADDR:
         {
-            if (inst_data.p_eaddr__ == NULL)
+            if (inst_data.p_daddr == NULL)
                 return 1;
 
             u64 eaddr_little_endian = (((u64)inst_data.daddr) >> 8) | ((inst_data.daddr << 8) & 0xff00);

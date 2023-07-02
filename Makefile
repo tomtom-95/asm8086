@@ -1,5 +1,5 @@
 .RECIPEPREFIX = <
-.PHONY = build run clean
+.PHONY = build run test clean
 
 SOURCENAME = asm8086.c
 EXECNAME = ${basename ${SOURCENAME}}
@@ -8,6 +8,9 @@ DEGUGEXTENSION = .dSYM
 DEBUGNAME = ${EXECNAME}${DEGUGEXTENSION}
 
 TESTFILENAME = test_minimal.asm
+BASEFILENAME = ${basename ${TESTFILENAME}}
+
+NASMFILENAME = ${BASEFILENAME}_nasm
 
 CC = clang
 CFLAGS = -Wall -Wextra -Wpedantic -Wconversion \
@@ -39,5 +42,9 @@ build:
 run:
 < ./${EXECNAME} ${TESTFILENAME}
 
+test:
+< nasm ${TESTFILENAME} -o ${NASMFILENAME}
+< diff ${BASEFILENAME} ${NASMFILENAME} 
+
 clean:
-< rm -rf ${EXECNAME} ${DEBUGNAME}
+< rm -rf ${BASEFILENAME} ${EXECNAME} ${DEBUGNAME}
