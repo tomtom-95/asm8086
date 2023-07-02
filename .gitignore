@@ -53,3 +53,8 @@ dkms.conf
 
 # VSCode
 .vscode/
+
+# Project binary
+asm8086
+test_minimal
+test_minimal_nasm
