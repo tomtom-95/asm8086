@@ -1,98 +1,34 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include <string.h>
 
+#include "arena.c"
+#include "string.c"
+#include "tables.h"
 #include "asm8086.h"
+#include "tokenizer.c"
 
-#include "asm8086_helper.c"
-#include "asm8086_lexer.c"
-#include "asm8086_debug.c"
-#include "asm8086_parser.c"
-#include "asm8086_codegen.c"
-
-// NOTE(saviomerda)
-// something strange with diff utility
-// with instruction : mov [bp + di], byte 7 
-// I can see that I generate the correct instruction
-// if I try to compare my generated binary and nasm generated binary with diff
-// it complain about no newline at end of file (no complain with instruction tested before)
-int main(int argc, char **argv)
+int main(void)
 {
-    FILE *asm_fp = fopen(argv[1], "r");
-    assert(asm_fp != NULL);
+    // TODO: base layer for reading file and do stuff with the file OS independently
+    Arena *arena = arena_alloc(MegaByte(1));
 
-    fseek(asm_fp, 0, SEEK_END);
-    size_t asm_filelen = (size_t)(ftell(asm_fp) + 1);
-    rewind(asm_fp);
+    FILE *file_input = fopen("./resources/test_push.asm", "r");
+    assert(file_input != NULL);
 
-    size_t asm_bufferlen = asm_filelen - 1;
-    char *asm_buffer = malloc((asm_bufferlen + 1) * sizeof(*asm_buffer));
-    assert(asm_buffer != NULL);
+    fseek(file_input, 0L, SEEK_END);
+    u64 file_len = (u64)ftell(file_input);
+    rewind(file_input);
 
-    fread(asm_buffer, 1, asm_bufferlen + 1, asm_fp);
-    assert(ferror(asm_fp) == 0);
-    assert(feof(asm_fp) != 0);
-    assert(asm_buffer[asm_bufferlen - 1] == '\n');
-    fclose(asm_fp);
+    String input = { .str = arena_push(arena, file_len), .len = file_len };
+    assert(fread(input.str, 1, file_len, file_input) == file_len);
+    fclose(file_input);
 
-    assert(strlen(argv[1]) < LEN_MAX_FILENAME - 1);
-    char basename[LEN_MAX_FILENAME];
-    get_basename(argv[1], basename);
+    TokenList token_list = token_list_init(arena);
 
-    FILE *bin_fp = fopen(basename, "wb");
-    assert(bin_fp != NULL);
+    tokenize(&token_list, input);
 
-    struct LexTok *tok_stack = malloc(K(1) * sizeof(*tok_stack));
-    assert(tok_stack != NULL);
-    struct LexTok *tok_sp = tok_stack;
-
-    struct LexTokLabel *lbl_stack = malloc(K(1) * sizeof(*lbl_stack));
-    assert(lbl_stack != NULL);
-    struct LexTokLabel *lbl_sp = lbl_stack;
-
-    struct LexTokNum *num_stack = malloc(K(1) * sizeof(*num_stack));
-    assert(num_stack != NULL);
-    struct LexTokNum *num_sp = num_stack;
-
-    char *p_asm_buf = asm_buffer;
-    if (lexer(&tok_sp, &p_asm_buf, &lbl_sp, &num_sp) != 0)
-        return printf("lexer error\n"), 1;
-    else
-        printf("lexer success\n");
-
-    struct ParserNode *node_stack = malloc(K(1) * sizeof(*node_stack));
-
-    struct LexTok *p_tok       = tok_stack;
-    struct ParserNode *node_sp = node_stack;
-    while (p_tok != tok_sp)
-    {
-        memset(&inst_data, 0, sizeof(inst_data));
-
-        struct LexTok *p_tok_start      = p_tok;
-        struct ParserNode *p_node_start = node_sp;
-
-        if (parser_line_(&node_sp, &p_tok) == 0)
-            printf("parser success\n");
-        else
-            printf("parser error\n");
-
-        // print_node_stack(p_node_start, node_sp);
-
-        struct InstEnc encoding = {0};
-        if (codegen(p_node_start, p_tok_start, &encoding) == 0)
-            write_inst_to_file(encoding, bin_fp);
-        else
-            printf("codegen error\n");
-    }
-
-    free(asm_buffer);
-    free(tok_stack);
-    free(lbl_stack);
-    free(num_stack);
-    free(node_stack);
-
-    fclose(bin_fp);
+    token_list_print(&token_list);
 
     return 0;
 }
