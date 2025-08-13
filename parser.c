@@ -339,6 +339,8 @@ parse_operand(TokenList *token_list, u64 *idx)
 
         return operand;
     }
+    
+    p = *idx;
 
     TokenKind register_segment = parse_register_segment(token_list, &p);
     if (p)
@@ -349,6 +351,8 @@ parse_operand(TokenList *token_list, u64 *idx)
 
         return operand;
     }
+
+    p = *idx;
 
     s16 immediate = parse_imm(token_list, &p);
     if (p)

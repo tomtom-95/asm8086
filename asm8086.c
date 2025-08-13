@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <inttypes.h>
 
 #include "arena.c"
 #include "string.c"
@@ -29,16 +30,42 @@ int main(void)
     TokenList token_list = token_list_init(arena);
 
     tokenize(&token_list, input);
+    
+    // Write to the output file one byte at time: probably very stupid
+    FILE *file_output = fopen("./resources/out.hex", "wb");
+    if (!file_output)
+    {
+        printf("Error: cannot open file\n");
+        return 1;
+    }
+
+    Arena *output_arena = arena_alloc(MegaByte(1));
 
     // Start from one, token 0 is a sentinel with dummy value
     u64 idx = 1;
+
     while (idx < token_list.cnt)
     {
         parse(&token_list, &idx);
         InstructionEncoding enc = codegen();
-        printf("encoding: %llu\n", enc.encoding);
+
+        u64 num_bytes = enc.len / 8;
+        u8 *p = arena_push(output_arena, num_bytes);
+
+        for (u64 i = 0; i < num_bytes; ++i)
+        {
+            u64 offset = num_bytes - i - 1;
+            u8 b = (u8)((enc.encoding >> (8 * offset)) & 0xFF);
+            p[i] = b;
+        }
+
+        printf("Encoding: 0x%" PRIx64 "\n", enc.encoding); 
     }
 
+    u8 *base = (u8*)output_arena + output_arena->base;
+    fwrite(base, output_arena->pos, 1, file_output);
+
+    fclose(file_output);
 
     return 0;
 }

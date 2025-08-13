@@ -1,1 +1,1 @@
-mov dh, al
+mov cl, 12

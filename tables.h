@@ -94,21 +94,17 @@
     ENTRY(SEG_OVR,     seg_ovr)     \
     ENTRY(IMM,         imm)
 
-#define OPCODE(bits)      ENTRY(OPCODE,   bits, sizeof(#bits) - 1)
-#define ImplRegD(bit)     ENTRY(ImplRegD, bit,  0)
-#define ImplRmD(bit)      ENTRY(ImplRmD,  bit,  0)
-#define ImplReg(bits)     ENTRY(ImplReg,  bits, 0)
-
-#define MOD               ENTRY(MOD,  0,   2)
-#define REG               ENTRY(REG,  0,   3)
-#define SR                ENTRY(SR,   0,   2)
-#define RM                ENTRY(RM,   0,   3)
-#define DISP              ENTRY(DISP, 0,   0)
-#define IMM               ENTRY(IMM,  0,   0)
-#define ADDR              ENTRY(ADDR, 0,   0)
-#define D                 ENTRY(D,    0,   1)
-#define W                 ENTRY(W,    0,   1)
-#define END               ENTRY(END,  0,   0)
+#define OPCODE(bits)  ENTRY(OPCODE,   bits, sizeof(#bits) - 1)
+#define MOD           ENTRY(MOD,  0,   2)
+#define REG           ENTRY(REG,  0,   3)
+#define SR            ENTRY(SR,   0,   2)
+#define RM            ENTRY(RM,   0,   3)
+#define DISP          ENTRY(DISP, 0,   0)
+#define IMM           ENTRY(IMM,  0,   0)
+#define ADDR          ENTRY(ADDR, 0,   0)
+#define D             ENTRY(D,    0,   1)
+#define W             ENTRY(W,    0,   1)
+#define END           ENTRY(END,  0,   0)
 
 #define TABLE_INST_FIELDS \
     MOD  \
@@ -123,12 +119,12 @@
     END 
 
 #define TABLE_INSTRUCTION \
-    INST(MOV, REGMEM_TOFROM_REG, { OPCODE(100010), D, W, MOD, REG, RM, DISP, END })                        \
-    INST(MOV, IMM_TO_REGMEM,     { OPCODE(1100011), ImplRmD(1), W, MOD, OPCODE(000), RM, DISP, IMM, END }) \
-    INST(MOV, IMM_TO_REG,        { OPCODE(1011), ImplRegD(1), W, REG, IMM, END })                          \
-    INST(MOV, MEM_TO_ACC,        { OPCODE(1010000), ImplRegD(1), ImplReg(000), W, ADDR, END })             \
-    INST(MOV, ACC_TO_MEM,        { OPCODE(1010001), ImplRegD(0), ImplReg(000), W, ADDR, END })             \
-    INST(MOV, REGMEM_TO_SEGREG,  { OPCODE(10001110), ImplRmD(0), MOD, OPCODE(0), SR, RM, DISP, END })      \
-    INST(MOV, SEGREG_TO_REGMEM,  { OPCODE(10001100), ImplRmD(1), MOD, OPCODE(0), SR, RM, DISP, END })
+    INST(MOV, REGMEM_TOFROM_REG, { OPCODE(100010), D, W, MOD, REG, RM, DISP, END })            \
+    INST(MOV, IMM_TO_REGMEM,     { OPCODE(1100011), W, MOD, OPCODE(000), RM, DISP, IMM, END }) \
+    INST(MOV, IMM_TO_REG,        { OPCODE(1011), W, REG, IMM, END })                           \
+    INST(MOV, MEM_TO_ACC,        { OPCODE(1010000), W, ADDR, END })                            \
+    INST(MOV, ACC_TO_MEM,        { OPCODE(1010001), W, ADDR, END })                            \
+    INST(MOV, REGMEM_TO_SEGREG,  { OPCODE(10001110), MOD, OPCODE(0), SR, RM, DISP, END })      \
+    INST(MOV, SEGREG_TO_REGMEM,  { OPCODE(10001100), MOD, OPCODE(0), SR, RM, DISP, END })
 
 #endif // TABLES_H

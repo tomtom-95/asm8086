@@ -18,9 +18,6 @@ typedef enum InstFieldId
     INST_NULL,
 #define ENTRY(id, ...) Glue(INST_, id),
     OPCODE(...)
-    ImplRegD(...)
-    ImplRmD(...)
-    ImplReg(...)
     TABLE_INST_FIELDS
 #undef ENTRY
     INST_COUNT

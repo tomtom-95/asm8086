@@ -30,7 +30,7 @@ token_list_add(TokenList *token_list, TokenKind token_kind, String string, u64 n
 
     token->token_kind = token_kind;
     token->token_view = string;
-    token->num = 0;
+    token->num = num;
     ++token_list->cnt;
 }
 
