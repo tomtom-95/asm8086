@@ -6,30 +6,31 @@
     ENTRY(PUSH,  push)  \
     ENTRY(POP,   pop)
 
-// Chapter 4, Table 4.9, MOD=11
+// Chapter 4, Table 4.9: REG Field Encoding
+// NOTE: the same table applies in MOD=11 case when encoding R/M field (see table 4.10)
 #define TABLE_REGISTER_GENERAL \
-    ENTRY(AL, al, 000, 0)      \
-    ENTRY(AX, ax, 000, 1)      \
-    ENTRY(CL, cl, 001, 0)      \
-    ENTRY(CX, cx, 001, 1)      \
-    ENTRY(DL, dl, 010, 0)      \
-    ENTRY(DX, dx, 010, 1)      \
-    ENTRY(BL, bl, 011, 0)      \
-    ENTRY(BX, bx, 011, 1)      \
-    ENTRY(AH, ah, 100, 0)      \
-    ENTRY(SP, sp, 100, 1)      \
-    ENTRY(CH, ch, 101, 0)      \
-    ENTRY(BP, bp, 101, 1)      \
-    ENTRY(DH, dh, 110, 0)      \
-    ENTRY(SI, si, 110, 1)      \
-    ENTRY(BH, bh, 111, 0)      \
-    ENTRY(DI, di, 111, 1)
+    ENTRY(AL, al, 0, 0)        \
+    ENTRY(AX, ax, 0, 1)        \
+    ENTRY(CL, cl, 1, 0)        \
+    ENTRY(CX, cx, 1, 1)        \
+    ENTRY(DL, dl, 2, 0)        \
+    ENTRY(DX, dx, 2, 1)        \
+    ENTRY(BL, bl, 3, 0)        \
+    ENTRY(BX, bx, 3, 1)        \
+    ENTRY(AH, ah, 4, 0)        \
+    ENTRY(SP, sp, 4, 1)        \
+    ENTRY(CH, ch, 5, 0)        \
+    ENTRY(BP, bp, 5, 1)        \
+    ENTRY(DH, dh, 6, 0)        \
+    ENTRY(SI, si, 6, 1)        \
+    ENTRY(BH, bh, 7, 0)        \
+    ENTRY(DI, di, 7, 1)
 
 #define TABLE_REGISTER_SEGMENT \
-    ENTRY(ES, es, 00, 1)       \
-    ENTRY(CS, cs, 01, 1)       \
-    ENTRY(SS, ss, 10, 1)       \
-    ENTRY(DS, ds, 11, 1)
+    ENTRY(ES, es, 0, 1)        \
+    ENTRY(CS, cs, 1, 1)        \
+    ENTRY(SS, ss, 2, 1)        \
+    ENTRY(DS, ds, 3, 1)
 
 #define TABLE_PREFIX              \
     ENTRY(LOCK,  lock,  11110000) \
@@ -49,59 +50,23 @@
     ENTRY(ZERO,       '0' )       \
     ENTRY(EOL,        '\n')
 
-#define TABLE_OPERATORS   \
-    ENTRY(BITS,   bits)   \
-    ENTRY(BYTE,   byte)   \
-    ENTRY(WORD,   word)   \
-    ENTRY(LABEL,  label)  \
-    ENTRY(NUM,    num)
+#define TABLE_OPERATORS  \
+    ENTRY(BITS,  bits)   \
+    ENTRY(BYTE,  byte)   \
+    ENTRY(WORD,  word)   \
+    ENTRY(LABEL, label)  \
+    ENTRY(NUM,   num)    \
 
+#define TABLE_EADDR          \
+    ENTRY      (BX, SI, 000) \
+    ENTRY      (BX, DI, 001) \
+    ENTRY      (BP, SI, 010) \
+    ENTRY      (BP, DI, 011) \
+    ENTRYINDEX (    SI, 100) \
+    ENTRYINDEX (    DI, 101) \
+    ENTRYBASE  (BP,     110) \
+    ENTRYBASE  (BX,     111)
 
-#if 0
-#define TABLE_ALL \
-    ENTRY     (BITS,       BITS,       bits)       \
-    ENTRY     (MNEMONIC,   MOV,        mov)        \
-    ENTRY_ALT (MNEMONIC,   PUSH,       push)       \
-    ENTRY_ALT (MNEMONIC,   POP,        pop)        \
-    ENTRY     (REG_GEN,    AX,         ax)         \
-    ENTRY_ALT (REG_GEN,    AH,         ah)         \
-    ENTRY_ALT (REG_GEN,    AL,         al)         \
-    ENTRY_ALT (REG_GEN,    BX,         bx)         \
-    ENTRY_ALT (REG_GEN,    BH,         bh)         \
-    ENTRY_ALT (REG_GEN,    BL,         bl)         \
-    ENTRY_ALT (REG_GEN,    CX,         cx)         \
-    ENTRY_ALT (REG_GEN,    CH,         ch)         \
-    ENTRY_ALT (REG_GEN,    CL,         cl)         \
-    ENTRY_ALT (REG_GEN,    DX,         dx)         \
-    ENTRY_ALT (REG_GEN,    DH,         dh)         \
-    ENTRY_ALT (REG_GEN,    DL,         dl)         \
-    ENTRY_ALT (REG_GEN,    SP,         sp)         \
-    ENTRY_ALT (REG_GEN,    BP,         bp)         \
-    ENTRY_ALT (REG_GEN,    SI,         si)         \
-    ENTRY_ALT (REG_GEN,    DI,         di)         \
-    ENTRY     (REG_SEG,    ES,         es)         \
-    ENTRY_ALT (REG_SEG,    CS,         cs)         \
-    ENTRY_ALT (REG_SEG,    SS,         ss)         \
-    ENTRY_ALT (REG_SEG,    DS,         ds)         \
-    ENTRY     (PREFIX,     LOCK,       lock)       \
-    ENTRY_ALT (PREFIX,     REP,        rep)        \
-    ENTRY_ALT (PREFIX,     REPE,       repe)       \
-    ENTRY_ALT (PREFIX,     REPZ,       repz)       \
-    ENTRY_ALT (PREFIX,     REPNE,      repne)      \
-    ENTRY_ALT (PREFIX,     REPNZ,      repnz)      \
-    ENTRY     (OPR_MATH,   PLUS,       plus)       \
-    ENTRY_ALT (OPR_MATH,   MINUS,      minus)      \
-    ENTRY     (OPR_SIZE,   BYTE,       byte)       \
-    ENTRY_ALT (OPR_SIZE,   WORD,       word)       \
-    ENTRY     (LABEL,      LABEL,      label)      \
-    ENTRY     (NUM,        NUM,        num)        \
-    ENTRY_ALT (NUM,        NUM_ZERO,   num_zero)   \
-    ENTRY     (COLON,      COLON,      colon)      \
-    ENTRY     (COMMA,      COMMA,      comma)      \
-    ENTRY     (LSQUARE_BR, LSQUARE_BR, lsquare_br) \
-    ENTRY     (RSQUARE_BR, RSQUARE_BR, rsquare_br) \
-    ENTRY     (EOL,        EOL,        eol)
-#endif
 
 #define TABLE_NODE_NON_TERMINAL     \
     ENTRY(EADDR__,     eaddr__)     \
@@ -129,20 +94,10 @@
     ENTRY(SEG_OVR,     seg_ovr)     \
     ENTRY(IMM,         imm)
 
-#define TABLE_EADDR \
-    ENTRY(BX,   SI,   000) \
-    ENTRY(BX,   DI,   001) \
-    ENTRY(BP,   SI,   010) \
-    ENTRY(BP,   DI,   011) \
-    ENTRY(NONE, SI,   100) \
-    ENTRY(NONE, DI,   101) \
-    ENTRY(BP,   NONE, 110) \
-    ENTRY(BX,   NONE, 111)
-
-#define OPCODE(num, bits) ENTRY(OPCODE##num, bits, sizeof(#bits) - 1)
-#define ImplRegD(bit)     ENTRY(ImplRegD, bit, 0)
-#define ImplRmD(bit)      ENTRY(ImplRmD, bit, 0)
-#define ImplReg(bits)     ENTRY(ImplReg, bits, 0)
+#define OPCODE(bits)      ENTRY(OPCODE,   bits, sizeof(#bits) - 1)
+#define ImplRegD(bit)     ENTRY(ImplRegD, bit,  0)
+#define ImplRmD(bit)      ENTRY(ImplRmD,  bit,  0)
+#define ImplReg(bits)     ENTRY(ImplReg,  bits, 0)
 
 #define MOD               ENTRY(MOD,  0,   2)
 #define REG               ENTRY(REG,  0,   3)
@@ -167,14 +122,13 @@
     W    \
     END 
 
-#define TABLE_INST \
-    INST(MOV, {OPCODE(1,100010), D, W, MOD, REG, RM, DISP, END})                          \
-    INST(MOV, {OPCODE(1,1100011), ImplRmD(1), W, MOD, OPCODE(2,000), RM, DISP, IMM, END}) \
-    INST(MOV, {OPCODE(1,1011), ImplRegD(1), W, REG, IMM, END})                            \
-    INST(MOV, {OPCODE(1,1010000), ImplRegD(1), ImplReg(000), W, ADDR, END})               \
-    INST(MOV, {OPCODE(1,1010001), ImplRegD(0), ImplReg(000), W, ADDR, END})               \
-    INST(MOV, {OPCODE(1,10001110), ImplRmD(0), MOD, OPCODE(2,0), SR, RM, DISP, END})      \
-    INST(MOV, {OPCODE(1,10001100), ImplRmD(1), MOD, OPCODE(2,0), SR, RM, DISP, END})      \
-    INST(NONE, {0})
+#define TABLE_INSTRUCTION \
+    INST(MOV, REGMEM_TOFROM_REG, { OPCODE(100010), D, W, MOD, REG, RM, DISP, END })                        \
+    INST(MOV, IMM_TO_REGMEM,     { OPCODE(1100011), ImplRmD(1), W, MOD, OPCODE(000), RM, DISP, IMM, END }) \
+    INST(MOV, IMM_TO_REG,        { OPCODE(1011), ImplRegD(1), W, REG, IMM, END })                          \
+    INST(MOV, MEM_TO_ACC,        { OPCODE(1010000), ImplRegD(1), ImplReg(000), W, ADDR, END })             \
+    INST(MOV, ACC_TO_MEM,        { OPCODE(1010001), ImplRegD(0), ImplReg(000), W, ADDR, END })             \
+    INST(MOV, REGMEM_TO_SEGREG,  { OPCODE(10001110), ImplRmD(0), MOD, OPCODE(0), SR, RM, DISP, END })      \
+    INST(MOV, SEGREG_TO_REGMEM,  { OPCODE(10001100), ImplRmD(1), MOD, OPCODE(0), SR, RM, DISP, END })
 
 #endif // TABLES_H

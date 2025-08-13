@@ -180,14 +180,15 @@ const u8 enc_rm_eaddr[] = {
 
 enum InstFieldId
 {
+    INST_NULL,
 #define ENTRY(id, ...) INST_##id,
-    OPCODE(1, ...)
-    OPCODE(2, ...)
+    OPCODE(...)
     ImplRegD(...)
     ImplRmD(...)
     ImplReg(...)
     TABLE_INST_FIELDS
 #undef ENTRY
+    INST_COUNT
 };
 
 struct InstField

@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "string.c"
 #include "asm8086.h"
+#include "tokenizer.h"
 
 bool
 char_is_space(u8 c)
@@ -15,7 +16,11 @@ TokenList
 token_list_init(Arena *arena)
 {
     Token *token = (Token *)((u8 *)arena + arena->base + arena->pos);
-    return (TokenList){ .arena = arena, .cnt = 0, .token = token };
+
+    TokenList token_list = { .arena = arena, .cnt = 0, .token = token };
+    token_list_add(&token_list, TOK_NULL, (String){0}, 0);
+
+    return token_list;
 }
 
 void
@@ -33,7 +38,6 @@ void
 token_list_print(TokenList *token_list)
 {
     for (u64 idx = 0; idx < token_list->cnt; ++idx) {
-        // string_print((token_list->token + idx)->token_view);
         string_print(token_string[(token_list->token + idx)->token_kind]);
     }
 }
@@ -53,7 +57,7 @@ peek_token(TokenList *token_list, String input, u64 idx)
     if (ch == '[' || ch == ']' || ch == '+' || ch == '-' ||
         ch == ':' || ch == ',' || ch == '0' || ch == '\n')
     {
-        token_kind = kLUT[ch];
+        token_kind = lut_one_character_token[ch];
         string_view = (String){ .str = input.str + start, .len = 1 };
         ++end;
     }
@@ -81,9 +85,8 @@ peek_token(TokenList *token_list, String input, u64 idx)
             ++end;
 
         string_view = (String){ .str = input.str + start, .len = end - start };
-        token_kind = TOK_NUM;
-
         num = u64_from_string(string_view, 10);
+        token_kind = TOK_NUM;
     }
 
     token_list_add(token_list, token_kind, string_view, num);
@@ -101,7 +104,12 @@ tokenize(TokenList *token_list, String input)
             ++idx;
 
         idx = peek_token(token_list, input, idx);
+    }
 
+    if ((token_list->token + token_list->cnt)->token_kind != TOK_EOL) {
+        // If the last line of the file does not have a '\n' add a
+        // TOK_EOL anyway to make the parser happy later
+        token_list_add(token_list, TOK_EOL, (String){0}, 0);
     }
 }
 

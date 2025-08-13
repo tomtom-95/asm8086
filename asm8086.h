@@ -7,6 +7,7 @@
 
 #include "utils.c"
 #include "tables.h"
+#include "tokenizer.h"
 
 #define LEN_MAX_FILENAME      64
 #define LEN_MAX_LABEL         32
@@ -16,120 +17,6 @@
 #define LEN_MAX_INST_BYTES    6 
 #define LEN_SEGMENT           K(64)
 
-typedef enum TokenKind TokenKind;
-enum TokenKind
-{
-    TOK_NULL,
-#define ENTRY(id, ...) Glue(TOK_, id),
-    TABLE_MNEMONIC
-    TABLE_REGISTER_GENERAL
-    TABLE_REGISTER_SEGMENT
-    TABLE_PREFIX
-    TABLE_OPERATORS
-    TABLE_ONE_CHARACTER_TOKEN
-#undef ENTRY
-    TOK_COUNT,
-};
-
-typedef struct Token Token;
-struct Token {
-    TokenKind token_kind;
-    String token_view;
-    u64 num;
-};
-
-typedef struct TokenList TokenList;
-struct TokenList {
-    Arena *arena;
-    Token *token;
-    u64 cnt;
-};
-
-String token_string[] = {
-    string_lit("null"),
-#define ENTRY(id, name, ...) string_lit(Stringify(name)),
-    TABLE_MNEMONIC
-    TABLE_REGISTER_GENERAL
-    TABLE_REGISTER_SEGMENT
-    TABLE_PREFIX
-    TABLE_OPERATORS
-    TABLE_ONE_CHARACTER_TOKEN
-#undef ENTRY
-    string_lit("count")
-};
-
-static const TokenKind kLUT[UCHAR_MAX + 1] = {
-#define ENTRY(id, ch) [(ch)] = (Glue(TOK_, id)),
-    TABLE_ONE_CHARACTER_TOKEN
-#undef ENTRY
-};
-
-// enum Mnemonic
-// {
-// #define ENTRY(id, ...) id,
-//     TABLE_MNEMONIC
-// #undef ENTRY
-// };
-// 
-// enum Register
-// {
-// #define ENTRY(id, ...) id,
-//     TABLE_REGISTER_FULL
-// #undef ENTRY
-// };
-// 
-// enum Prefix
-// {
-// #define ENTRY(id, ...) id,
-//     TABLE_PREFIX
-// #undef ENTRY
-// };
-// 
-// char *names_registers[] = {
-// #define ENTRY(id, name, ...) Stringify(name)
-//     TABLE_REGISTER_FULL
-// #undef ENTRY
-// };
-// 
-// char *names_prefix[] = {
-// #define ENTRY(id, name, ...) Stringify(name)
-//     TABLE_PREFIX
-// #undef ENTRY
-// };
-
-// u8 reg_field_registers[] = {
-// #define ENTRY(id, name, reg_field, ...) 0b##reg_field,
-//     TABLE_REGISTER_FULL
-// #undef ENTRY
-// };
-// 
-// u8 w_field_registers[] = {
-// #define ENTRY(id, name, reg_field, w_field) 0b##w_field,
-//     TABLE_REGISTER_FULL
-// #undef ENTRY
-// };
-// 
-// char *names_tokens[] = {
-// #define ENTRY(id, name, ...) Stringify(name),
-//     TABLE_MNEMONIC
-//     TABLE_REGISTER_FULL
-//     TABLE_PREFIX
-//     TABLE_OPERATORS
-// #undef ENTRY
-// },
-
-
-// enum IdLexTok1 id_reg_seg[] = {
-// #define ENTRY(id, enc, ...) TOK1_##id,
-//     TABLE_REG_SEG_ENCODING
-// #undef ENTRY
-// };
-// 
-// const u8 enc_reg_seg[] = {
-// #define ENTRY(id, enc, ...) 0b##enc,
-//     TABLE_REG_SEG_ENCODING
-// #undef ENTRY
-// };
 
 // struct LexTokLabel
 // {

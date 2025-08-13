@@ -2,17 +2,20 @@ line_
     : line EOL
 
 line
-    | BITS NUM
-    | lbl 
-    | inst
+    : BITS NUM
+    | label
+    | instruction
 
-lbl
+label
     : LABEL COLON
 
-inst
-    : mnemonic_ operand_ COMMA operand_
-    | mnemonic_ operand_
-    | mnemonic_
+instruction
+    : mnemonic_ instruction_tail?
+
+instruction_tail
+    : operand_ COMMA operand_
+    | operand_
+    | LABEL
 
 mnemonic_
     : prefix* mnemonic
@@ -25,12 +28,12 @@ opr_prefix
     | seg_ovr
 
 seg_ovr
-    : reg_seg COLON
+    : register_segment COLON
 
 operand
-    : reg_gen
+    : register_general
     | eaddr__
-    | reg_seg
+    | register_segment
     | imm
 
 imm
@@ -51,12 +54,9 @@ eaddr_
     : (PLUS)? eaddr
 
 eaddr
-    : reg_base PLUS reg_idx signed_num?
-    | reg_base              signed_num?
-    |               reg_idx signed_num?
-    | reg_base PLUS reg_idx signed_zero?
-    | reg_base              signed_zero?
-    |               reg_idx signed_zero?
+    : register_base PLUS register_index signed_num?
+    | register_base                     signed_num?
+    |                    register_index signed_num?
     | direct_addr
 
 direct_addr
@@ -73,16 +73,16 @@ mnemonic
     | PUSH
     | POP
 
-reg_base
+register_base
     : BX | BP
 
-reg_idx
+register_index
     : SI | DI
 
-reg_gen
+register_general
     : AX | AL | AH | BX | BL | BH | CX | CL | CH | DX | DL | DH | SP | BP | SI | DI
 
-reg_seg
+register_segment
     : CS | DS | SS | ES
 
 opr_math

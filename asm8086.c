@@ -7,13 +7,15 @@
 #include "tables.h"
 #include "asm8086.h"
 #include "tokenizer.c"
+#include "parser.c"
+#include "codegen.c"
 
 int main(void)
 {
     // TODO: base layer for reading file and do stuff with the file OS independently
     Arena *arena = arena_alloc(MegaByte(1));
 
-    FILE *file_input = fopen("./resources/test_push.asm", "r");
+    FILE *file_input = fopen("./resources/test_one_instruction.asm", "r");
     assert(file_input != NULL);
 
     fseek(file_input, 0L, SEEK_END);
@@ -28,7 +30,15 @@ int main(void)
 
     tokenize(&token_list, input);
 
-    token_list_print(&token_list);
+    // Start from one, token 0 is a sentinel with dummy value
+    u64 idx = 1;
+    while (idx < token_list.cnt)
+    {
+        parse(&token_list, &idx);
+        InstructionEncoding enc = codegen();
+        printf("encoding: %llu\n", enc.encoding);
+    }
+
 
     return 0;
 }

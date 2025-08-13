@@ -21,13 +21,15 @@ OUT_DIR="build"
 CC="${CC:-clang}"                       # allow CC=gcc ./build.sh …
 
 CFLAGS=(
-  -Wall -Wextra -Wpedantic -Wconversion
-  -Wformat=2 -Wno-unused-parameter -Wshadow -Wvla
-  -Wwrite-strings -Wstrict-prototypes -Wold-style-definition
+  -Wall -Wextra -Wpedantic -Wconversion -Wno-unused-parameter
+  -Wshadow -Wvla -Wwrite-strings -Wstrict-prototypes -Wold-style-definition
   -Wredundant-decls -Wnested-externs -Wmissing-include-dirs
-  -Wno-gnu-binary-literal -Wno-c11-extensions
-  -O0 -std=c99
+  -fsanitize=address
+  -g3 -O0 -std=c99
 )
+# -Werror
+# -Wno-gnu-binary-literal
+# TODO: -fsanitize=undefined -> must deal with that later
 
 # Extra warnings for GCC
 if [[ $CC == gcc ]]; then
