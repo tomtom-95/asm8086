@@ -2,34 +2,32 @@
 #include "tokenizer.h"
 #include "parser.h"
 
-internal s32
-is_base(TokenKind r)
-{
-    return r==TOK_BX || r==TOK_BP;
-}
-
-internal s32
-is_index(TokenKind r)
-{
-    return r==TOK_SI || r==TOK_DI;
-}
-
-internal bool
-is_register_8_bit(TokenKind r)
-{
-    bool is_low = (r == TOK_AL || r == TOK_CL || r == TOK_DL || r == TOK_BL);
-    bool is_high = (r == TOK_AH || r == TOK_CH || r == TOK_DH || r == TOK_BH);
-
-    return is_low || is_high;
-}
+// internal s32
+// is_base(TokenKind r)
+// {
+//     return r==TOK_BX || r==TOK_BP;
+// }
+// 
+// internal s32
+// is_index(TokenKind r)
+// {
+//     return r==TOK_SI || r==TOK_DI;
+// }
+// 
+// internal bool
+// is_register_8_bit(TokenKind r)
+// {
+//     bool is_low = (r == TOK_AL || r == TOK_CL || r == TOK_DL || r == TOK_BL);
+//     bool is_high = (r == TOK_AH || r == TOK_CH || r == TOK_DH || r == TOK_BH);
+// 
+//     return is_low || is_high;
+// }
 
 internal void
 parse(TokenList *token_list, u64 *idx)
 {
-    instruction_data = (InstructionData){0};
-
     parse_line_(token_list, idx);
-    if (idx)
+    if (*idx)
     {
         printf("Line parsed\n");
         // Parsing of the line was successfull
@@ -301,6 +299,7 @@ parse_mnemonic(TokenList *token_list, u64 *idx)
     }
 
     *idx = 0;
+    return TOK_NULL;
 }
 
 internal Operand
@@ -313,16 +312,9 @@ parse_operand(TokenList *token_list, u64 *idx)
     TokenKind register_general = parse_register_general(token_list, &p);
     if (p)
     {
-        if (is_register_8_bit(register_general))
-        {
-            operand.operand_kind = OPERAND_GENERAL_REGISTER_8_BIT;
-        }
-        else
-        {
-            operand.operand_kind = OPERAND_GENERAL_REGISTER_16_BIT;
-        }
-
+        operand.operand_kind = op_kind_from_reg_lut[register_general];
         operand.register_general = register_general;
+
         *idx = p;
 
         return operand;
@@ -330,11 +322,19 @@ parse_operand(TokenList *token_list, u64 *idx)
 
     p = *idx;
 
-    EffectiveAddress effective_address = parse_eaddr__(token_list, &p);
+    EffectiveAddress eaddr = parse_eaddr__(token_list, &p);
     if (p)
     {
-        operand.operand_kind = OPERAND_EFFECTIVE_ADDRESS;
-        operand.effective_address = effective_address;
+        if (eaddr.register_base || eaddr.register_index)
+        {
+            operand.operand_kind = OP_MEM;
+        }
+        else
+        {
+            operand.operand_kind = OP_DADDR;
+        }
+        operand.effective_address = eaddr;
+
         *idx = p;
 
         return operand;
@@ -345,7 +345,7 @@ parse_operand(TokenList *token_list, u64 *idx)
     TokenKind register_segment = parse_register_segment(token_list, &p);
     if (p)
     {
-        operand.operand_kind = OPERAND_SEGMENT_REGISTER;
+        operand.operand_kind = OP_SEGREG;
         operand.register_segment = register_segment;
         *idx = p;
 
@@ -357,13 +357,13 @@ parse_operand(TokenList *token_list, u64 *idx)
     s16 immediate = parse_imm(token_list, &p);
     if (p)
     {
-        if (immediate < 256)
+        if (-129 < immediate && immediate < 128)
         {
-            operand.operand_kind = OPERAND_IMMEDIATE_8_BIT;
+            operand.operand_kind = OP_IMM8;
         }
         else
         {
-            operand.operand_kind = OPERAND_IMMEDIATE_16_BIT;
+            operand.operand_kind = OP_IMM16;
         }
 
         operand.immediate = immediate;
@@ -431,18 +431,18 @@ parse_eaddr_(TokenList *token_list, u64 *idx)
 
     p = *idx;
 
-    EffectiveAddress effective_address = parse_eaddr(token_list, &p);
+    EffectiveAddress eaddr = parse_eaddr(token_list, &p);
 
     if (p)
     {
         *idx = p;
-        return effective_address;
+        return eaddr;
     }
 
-    effective_address = (EffectiveAddress){0};
-    *idx = 0;
+    eaddr = (EffectiveAddress){0};
+    *idx  = 0;
 
-    return effective_address;
+    return eaddr;
 }
 
 internal EffectiveAddress
@@ -459,11 +459,10 @@ parse_eaddr(TokenList *token_list, u64 *idx)
     {
         *idx = p;
 
-        eaddr.displacement_value = parse_signed_num(token_list, &p);
+        eaddr.displacement = parse_signed_num(token_list, &p);
 
         if (p)
         {
-            eaddr.displacement = TOK_NUM;
             *idx = p;
         }
 
@@ -479,11 +478,11 @@ parse_eaddr(TokenList *token_list, u64 *idx)
     {
         *idx = p;
 
-        eaddr.displacement_value = parse_signed_num(token_list, &p);
+        eaddr.displacement = parse_signed_num(token_list, &p);
 
         if (p)
         {
-            eaddr.displacement = TOK_NUM;
+            *idx = p;
         }
 
         return eaddr;
@@ -498,11 +497,11 @@ parse_eaddr(TokenList *token_list, u64 *idx)
     {
         *idx = p;
 
-        eaddr.displacement_value = parse_signed_num(token_list, &p);
+        eaddr.displacement = parse_signed_num(token_list, &p);
 
         if (p)
         {
-            eaddr.displacement = TOK_NUM;
+            *idx = p;
         }
 
         return eaddr;
@@ -511,13 +510,11 @@ parse_eaddr(TokenList *token_list, u64 *idx)
     eaddr = (EffectiveAddress){0};
     p = *idx;
 
-    eaddr.direct_address_value = parse_direct_address(token_list, &p);
+    eaddr.direct_address = parse_direct_address(token_list, &p);
 
     if (p)
     {
         *idx = p;
-
-        eaddr.direct_address = TOK_NUM;
 
         return eaddr;
     }
@@ -535,9 +532,13 @@ parse_register_base(TokenList *token_list, u64 *idx)
     if (token_kind == TOK_BX || token_kind == TOK_BP)
     {
         ++(*idx);
+        return token_kind;
     }
-
-    return token_kind;
+    else
+    {
+        *idx = 0;
+        return TOK_NULL;
+    }
 }
 
 TokenKind
@@ -547,23 +548,35 @@ parse_register_index(TokenList *token_list, u64 *idx)
     if (token_kind == TOK_SI || token_kind == TOK_DI)
     {
         ++(*idx);
+        return token_kind;
     }
-
-    return token_kind;
+    else
+    {
+        *idx = 0;
+        return TOK_NULL;
+    }
 }
 
-u64
+s16
 parse_signed_num(TokenList *token_list, u64 *idx)
 {
     u64 p = *idx;
 
-    parse_opr_math(token_list, &p);
+    TokenKind opr_math = parse_opr_math(token_list, &p);
     Token token = parse_terminal(token_list, TOK_NUM, &p);
 
     if (p)
     {
         *idx = p;
-        return token.num;
+
+        if (opr_math == TOK_PLUS)
+        {
+            return (s16)token.num;
+        }
+        else
+        {
+            return -((s16)token.num);
+        }
     }
 
     *idx = 0;
@@ -591,7 +604,8 @@ internal s16
 parse_imm(TokenList *token_list, u64 *idx)
 {
     u64 p = *idx;
-    s32 num;
+
+    s16 num;
 
     TokenKind operator_math = parse_opr_math(token_list, &p);
     if (p)
@@ -602,7 +616,9 @@ parse_imm(TokenList *token_list, u64 *idx)
     TokenKind token_kind = token_list->token[*idx].token_kind;
     if (token_kind == TOK_NUM || token_kind == TOK_ZERO)
     {
-        num = token_list->token[*idx].num;
+        // TODO: I should check that the number I am parsing (with sign included)
+        //       can actually fit in 16 bit 2's complement
+        num = (s16)token_list->token[*idx].num;
 
         ++(*idx);
         if (operator_math == TOK_NULL || operator_math == TOK_PLUS)
@@ -635,16 +651,18 @@ parse_opr_math(TokenList *token_list, u64 *idx)
     return TOK_NULL;
 }
 
-internal void
+internal TokenKind
 parse_opr_size(TokenList *token_list, u64 *idx)
 {
     TokenKind token_kind = token_list->token[*idx].token_kind;
     if (token_kind == TOK_BYTE || token_kind == TOK_WORD)
     {
         ++(*idx);
+        return token_kind;
     }
 
     *idx = 0;
+    return TOK_NULL;
 }
 
 internal void
@@ -664,7 +682,7 @@ parse_seg_ovr(TokenList *token_list, u64 *idx)
     *idx = 0;
 }
 
-s64
+s16
 parse_direct_address(TokenList *token_list, u64 *idx)
 {
     u64 p = *idx;
@@ -685,15 +703,16 @@ parse_direct_address(TokenList *token_list, u64 *idx)
         *idx = p;
         if (tok_opr_math == TOK_NULL || tok_opr_math == TOK_PLUS)
         {
-            return tok_num.num;
+            return (s16)tok_num.num;
         }
         else
         {
-            return -((s64)tok_num.num);
+            return -((s16)tok_num.num);
         }
     }
 
     *idx = 0;
+    return 0;
 }
 
 Token
@@ -703,11 +722,11 @@ parse_terminal(TokenList *token_list, TokenKind token_kind, u64 *idx)
     if (token.token_kind == token_kind)
     {
         ++(*idx);
+        return token;
     }
     else
     {
         *idx = 0;
+        return (Token){0};
     }
-
-    token;
 }

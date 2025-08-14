@@ -1,5 +1,33 @@
 #include "codegen.h"
 
+// let's start from the fact that InstructionData has been filled
+// before starting the codegen phase I can look at what I have and make decision
+// for example:
+// mov si, bx
+// for this instruction what do I have in InstructionData?
+// I can look at the two operands, realize that are both OPERAND_GENERAL_REGISTER_16_BIT and make decision
+
+typedef enum {
+  FORM_RM_TOFROM_REG,
+  FORM_MOFFS_TO_ACC,  // AL/AX <- moffs16
+  FORM_RM_TO_ACC,
+  FORM_ACC_TO_MEM,
+  FORM_IMM_TO_RM,     // r/m <- imm (GRP1/GRP2/etc. with /digit)
+  FORM_RM_TO_SR,      // segreg <-> r/m
+  FORM_SR_TO_RM,
+  FORM_REL,           // Jcc, JMP, CALL near/short (PC-rel)
+  FORM_FAR_IMM,       // far JMP/CALL with imm16:16
+} IrForm;
+
+typedef struct InstructionIR InstructionIR;
+struct InstructionIR {
+    IrForm ir_form;
+    u8     mod;
+    u8     reg;
+    u8     w;
+    u8     d;
+};
+
 bool
 is_operand_general_reg(Operand operand)
 {
@@ -45,6 +73,77 @@ bool
 is_operand_segment_register(Operand operand)
 {
     return (operand.operand_kind == OPERAND_SEGMENT_REGISTER);
+}
+
+InstructionIR
+fill_intermediate_representation(InstructionData inst_data)
+{
+    InstructionIR ir = {0};
+
+    Operand operand_src = inst_data.src;
+    Operand operand_dst = inst_data.dst;
+
+    bool src_is_reg = is_operand_general_reg(operand_src);
+    bool dst_is_reg = is_operand_general_reg(operand_dst);
+
+    bool src_is_rm = is_operand_reg_or_mem(operand_src);
+    bool dst_is_rm = is_operand_reg_or_mem(operand_dst);
+
+    bool src_is_immediate = is_operand_immediate(operand_src);
+
+    bool src_is_acc = is_operand_accumulator(operand_src);
+    bool dst_is_acc = is_operand_accumulator(operand_dst);
+
+    bool src_is_mem = is_operand_effective_address(operand_src);
+    bool dst_is_mem = is_operand_effective_address(operand_dst);
+
+    bool src_is_seg_reg = is_operand_segment_register(operand_src);
+    bool dst_is_seg_reg = is_operand_segment_register(operand_dst);
+
+
+    if (is_16_bit_reg_involved(operand_src, operand_dst) ||
+        is_16_bit_operand_immediate_involved(operand_src, operand_dst))
+    {
+        ir.w = 1;
+    }
+    else
+    {
+        ir.w = 0;
+    }
+
+    if (src_is_reg)
+    {
+        ir.d = 0;
+    }
+    else
+    {
+        ir.d = 1;
+    }
+
+    if (src_is_rm && dst_is_rm)
+    {
+        ir.ir_form = FORM_RM_TOFROM_REG;
+    }
+    else if (src_is_immediate && is_operand_reg_or_mem(operand_dst))
+    {
+        ir.ir_form = FORM_IMM_TO_RM;
+    }
+    else if (src_is_mem && dst_is_acc)
+    {
+        ir.ir_form = FORM_RM_TO_ACC;
+    }
+    else if (src_is_acc && dst_is_mem)
+    {
+        ir.ir_form = FORM_ACC_TO_MEM;
+    }
+    else if (src_is_rm && dst_is_seg_reg)
+    {
+        ir.ir_form = FORM_RM_TO_SR;
+    }
+    else if (src_is_seg_reg && dst_is_rm)
+    {
+        ir.ir_form = FORM_SR_TO_RM;
+    }
 }
 
 bool
@@ -110,6 +209,11 @@ encode_mod(EffectiveAddress eaddr)
         return 0;
     }
 
+    if (base == TOK_BP && !displacement)
+    {
+        return 1;
+    }
+
     if (!displacement)
     {
         return 0;
@@ -138,65 +242,7 @@ encode_sr(Operand operand)
 InstructionEncoding
 codegen(void)
 {
-    bool src_is_general_reg = is_operand_general_reg(instruction_data.src);
-    bool dst_is_general_reg = is_operand_general_reg(instruction_data.dst);
-
-    bool src_is_reg_or_mem = is_operand_reg_or_mem(instruction_data.src);
-    bool dst_is_reg_or_mem = is_operand_reg_or_mem(instruction_data.dst);
-
-    bool src_is_immediate = is_operand_immediate(instruction_data.src);
-
-    bool dst_is_reg = is_operand_general_reg(instruction_data.dst);
-
-    bool src_is_acc = is_operand_accumulator(instruction_data.src);
-    bool dst_is_acc = is_operand_accumulator(instruction_data.dst);
-
-    bool src_is_mem = is_operand_effective_address(instruction_data.src);
-    bool dst_is_mem = is_operand_effective_address(instruction_data.dst);
-
-    bool src_is_seg_reg = is_operand_segment_register(instruction_data.src);
-    bool dst_is_seg_reg = is_operand_segment_register(instruction_data.dst);
-
-    if (src_is_general_reg && dst_is_general_reg)
-    {
-        if (!is_valid_reg_reg_operation(instruction_data.src, instruction_data.dst))
-        {
-            printf("Error: register operands have different sizes\n");
-            return (InstructionEncoding){0};
-        }
-    }
-
-    // TODO: more validation here, what to expect when one of the operand is an immediate etc ...
-
     InstDescription inst_description;
-    if (src_is_reg_or_mem && dst_is_reg_or_mem)
-    {
-        inst_description = REGMEM_TOFROM_REG;
-    }
-    else if (src_is_immediate && dst_is_reg)
-    {
-        inst_description = IMM_TO_REG;
-    }
-    else if (src_is_immediate && dst_is_reg_or_mem)
-    {
-        inst_description = IMM_TO_REGMEM;
-    }
-    else if (src_is_mem && dst_is_acc)
-    {
-        inst_description = MEM_TO_ACC;
-    }
-    else if (src_is_acc && dst_is_mem)
-    {
-        inst_description = ACC_TO_MEM;
-    }
-    else if (src_is_reg_or_mem && dst_is_seg_reg)
-    {
-        inst_description = REGMEM_TO_SEGREG;
-    }
-    else if (src_is_seg_reg && dst_is_reg_or_mem)
-    {
-        inst_description = SEGREG_TO_REGMEM;
-    }
     // TODO: fill the other option for instruction description
 
     InstructionEncoding enc = {0};
@@ -303,9 +349,25 @@ codegen(void)
                 }
                 else if (instruction.fields[j].id == INST_DISP)
                 {
+                    Operand operand_eaddr;
                     if (is_operand_effective_address(instruction_data.src))
                     {
-                        if (instruction_data.src.effective_address.displacement == TOK_NUM)
+                        operand_eaddr = instruction_data.src;
+                    }
+                    else
+                    {
+                        operand_eaddr = instruction_data.dst;
+                    }
+
+                    if (operand_eaddr.effective_address.register_base == TOK_BP)
+                    {
+                        // need to have a displacement even if 0
+                        if (operand_eaddr.effective_address.displacement == TOK_NULL)
+                        {
+                            enc.encoding = enc.encoding << 8;
+                            enc.len += 8;
+                        }
+                        else
                         {
                             if (instruction_data.src.effective_address.displacement_value < 256)
                             {
@@ -317,14 +379,14 @@ codegen(void)
                                 enc.encoding = enc.encoding << 16;
                                 enc.len += 16;
                             }
-                            enc.encoding = enc.encoding | instruction_data.src.effective_address.displacement_value;
+                            enc.encoding = enc.encoding | operand_eaddr.effective_address.displacement_value;
                         }
                     }
-                    else if (is_operand_effective_address(instruction_data.dst))
+                    else
                     {
-                        if (instruction_data.dst.effective_address.displacement == TOK_NUM)
+                        if (operand_eaddr.effective_address.displacement == TOK_NUM)
                         {
-                            if (instruction_data.dst.effective_address.displacement_value < 256)
+                            if (operand_eaddr.effective_address.displacement_value < 256)
                             {
                                 enc.encoding = enc.encoding << 8;
                                 enc.len += 8;
@@ -334,42 +396,41 @@ codegen(void)
                                 enc.encoding = enc.encoding << 16;
                                 enc.len += 16;
                             }
-                            enc.encoding = enc.encoding | instruction_data.dst.effective_address.displacement_value;
+                            enc.encoding = enc.encoding | operand_eaddr.effective_address.displacement_value;
                         }
                     }
                 }
                 else if (instruction.fields[j].id == INST_IMM)
                 {
-                    // TODO: check the encoding is correct (is the sign right?)
+                    Operand operand_imm;
                     if (is_operand_immediate(instruction_data.src))
                     {
-                        if (instruction_data.src.operand_kind == OPERAND_IMMEDIATE_8_BIT)
-                        {
-                            enc.encoding = enc.encoding << 8;
-                            enc.len += 8;
-                        }
-                        else
-                        {
-                            enc.encoding = enc.encoding << 16;
-                            enc.len += 16;
-                        }
-
-                        enc.encoding = enc.encoding | instruction_data.src.immediate;
+                        operand_imm = instruction_data.src;
                     }
                     else
                     {
-                        if (instruction_data.dst.operand_kind == OPERAND_IMMEDIATE_8_BIT)
-                        {
-                            enc.encoding = enc.encoding << 8;
-                            enc.len += 8;
-                        }
-                        else
-                        {
-                            enc.encoding = enc.encoding << 16;
-                            enc.len += 16;
-                        }
+                        operand_imm = instruction_data.dst;
+                    }
 
-                        enc.encoding = enc.encoding | instruction_data.dst.immediate;
+                    if (is_16_bit_operand_immediate_involved(instruction_data.src, instruction_data.dst) ||
+                        is_16_bit_reg_involved(instruction_data.src, instruction_data.dst))
+                    {
+                        enc.len += 16;
+
+                        u16 b0 = ((u16)operand_imm.immediate) & 0xFF;
+                        u16 b1 = (((u16)operand_imm.immediate) >> 8) & 0xFF;
+
+                        enc.encoding = enc.encoding << 8;
+                        enc.encoding = enc.encoding | b0;
+                        enc.encoding = enc.encoding << 8;
+                        enc.encoding = enc.encoding | b1;
+                        // the immediate value I read is a 16 bit already
+                    }
+                    else
+                    {
+                        enc.len += 8;
+                        enc.encoding = enc.encoding << 8;
+                        enc.encoding = enc.encoding | (u8)operand_imm.immediate;
                     }
                 }
                 else if (instruction.fields[j].id == INST_SR)

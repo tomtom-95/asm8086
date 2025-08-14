@@ -24,26 +24,28 @@ TokenKind;
 typedef struct Token Token;
 struct Token {
     TokenKind token_kind;
-    String token_view;
-    u64 num;
+    String    token_view;
+    u64       num;
 };
 
 typedef struct TokenList TokenList;
 struct TokenList {
     Arena *arena;
     Token *token;
-    u64 cnt;
+    u64    cnt;
 };
 
 String token_string[] = {
     string_lit("null"),
-#define ENTRY(id, name, ...) string_lit(Stringify(name)),
+#define ENTRY(...) ENTRY_IMPL(__VA_ARGS__, 0)
+#define ENTRY_IMPL(id, name, ...) string_lit(Stringify(name)),
     TABLE_MNEMONIC
     TABLE_REGISTER_GENERAL
     TABLE_REGISTER_SEGMENT
     TABLE_PREFIX
     TABLE_OPERATORS
     TABLE_ONE_CHARACTER_TOKEN
+#undef ENTRY_IMPL
 #undef ENTRY
     string_lit("count")
 };

@@ -3,22 +3,11 @@
 #include "tokenizer.h"
 #include "parser.h"
 
-typedef enum InstDescription
-{
-    DESCRIPTION_NULL, 
-#define INST(mnemonic, description, ...) description,
-    TABLE_INSTRUCTION
-#undef INST
-    DESCRIPTION_COUNT
-}
-InstDescription;
-
 typedef enum InstFieldId
 {
     INST_NULL,
-#define ENTRY(id, ...) Glue(INST_, id),
-    OPCODE(...)
-    TABLE_INST_FIELDS
+#define ENTRY(name, bits, size) Glue(INST_, name),
+    INST_FIELD_LIST
 #undef ENTRY
     INST_COUNT
 }
@@ -27,35 +16,42 @@ InstFieldId;
 typedef struct InstField InstField;
 struct InstField
 {
-    enum InstFieldId id;
-    u64 value;
-
-    // number of bits the instruction field occupy in the encoding
-    u8 size;
+    InstFieldId id;
+    u64         value;
+    u8          bitlen;
 };
 
-typedef struct Instruction Instruction;
-struct Instruction
-{
-    TokenKind mnemonic;
-    InstDescription instruction_description;
-    InstField fields[15];
-};
-
-typedef struct InstructionEncoding InstructionEncoding;
-struct InstructionEncoding
+typedef struct InstEncoding InstEncoding;
+struct InstEncoding
 {
     u64 encoding;
-    
-    // len in bits, used while encoding the instruction
-    u8 len;
+    u8  bitlen;
 };
 
-struct Instruction inst_table[] = {
-    {0, {0}, 0},
-#define INST(mnemonic, description, ...) { Glue(TOK_, mnemonic), description, __VA_ARGS__ },
+typedef struct InstTableKey InstTableKey;
+struct InstTableKey
+{
+    TokenKind   mnemonic;
+    OperandKind dst;
+    OperandKind src;
+};
+
+InstTableKey instruction_table_key[] = {
+#define INST(mnemonic, dst, src, ...) { Glue(TOK_, mnemonic), Glue(OP_, dst), Glue(OP_, src) },
+    TABLE_INSTRUCTION_V2
+#undef INST
+};
+
+typedef struct InstTableEntry InstTableEntry;
+struct InstTableEntry
+{
+    InstField inst_fields[16];
+};
+
+InstTableEntry instruction_table[] = {
+#define INST(mnemonic, dst, src, ...) __VA_ARGS__,
 #define ENTRY(id, value, len) { Glue(INST_, id), Glue(0b, value), len }
-    TABLE_INSTRUCTION
+    TABLE_INSTRUCTION_V2
 #undef ENTRY
 #undef INST
 };
@@ -64,4 +60,4 @@ struct Instruction inst_table[] = {
 internal u64        encode_rm(TokenKind base, TokenKind index); 
 internal u64        encode_mod(EffectiveAddress eaddr);
 
-InstructionEncoding codegen(void);
+InstEncoding        codegen(void);

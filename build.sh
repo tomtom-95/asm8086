@@ -11,7 +11,7 @@ EXECNAME="${SOURCENAME%.*}" # asm8086
 DEBUGEXTENSION=".dSYM"
 DEBUGNAME="${EXECNAME}${DEBUGEXTENSION}"
 
-TESTFILENAME="test_minimal.asm"
+TESTFILENAME="./resources/test_one_instruction.asm"
 BASEFILENAME="${TESTFILENAME%.*}"
 BINFILENAME="${BASEFILENAME}.bin"
 NASMFILENAME="${BASEFILENAME}_nasm.bin"
@@ -54,13 +54,13 @@ buildnew() {
 
 
 run() {
-  build
   echo "==> Running ${EXECNAME}"
-  "./$EXECNAME" "$TESTFILENAME"
+  "./build/$EXECNAME" "$TESTFILENAME"
 }
 
 test() {
   build
+  run
   echo "==> Assembling test file with NASM"
   nasm "$TESTFILENAME" -o "$NASMFILENAME"
   echo "==> Diffing binaries"
