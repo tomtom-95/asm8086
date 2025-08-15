@@ -105,4 +105,18 @@ next_power_of_two(u32 v)
     return v;
 }
 
+s8
+get_msb_pos(u64 x)
+{
+    if (x == 0) return -1;
+
+    s8 pos = 0;
+    while (x >>= 1)
+    {
+        pos++;
+    }
+
+    return pos;
+}
+
 #endif // UTILS_C

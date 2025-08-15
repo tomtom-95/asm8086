@@ -9,7 +9,7 @@
 #include "asm8086.h"
 #include "tokenizer.c"
 #include "parser.c"
-// #include "codegen.c"
+#include "codegen.c"
 
 int main(void)
 {
@@ -29,20 +29,9 @@ int main(void)
 
     TokenList token_list = token_list_init(arena);
 
-    u64 idx = 1;
     tokenize(&token_list, input);
 
-    while (idx < token_list.cnt)
-    {
-        parse(&token_list, &idx);
-        if (!idx)
-        {
-            return 1;
-        }
-    }
-    
-    #if 0
-    // Write to the output file one byte at time: probably very stupid
+
     FILE *file_output = fopen("./resources/test_one_instruction.bin", "wb");
     if (!file_output)
     {
@@ -52,15 +41,17 @@ int main(void)
 
     Arena *output_arena = arena_alloc(MegaByte(1));
 
-    // Start from one, token 0 is a sentinel with dummy value
     u64 idx = 1;
-
     while (idx < token_list.cnt)
     {
         parse(&token_list, &idx);
-        InstructionEncoding enc = codegen();
+        if (!idx)
+        {
+            return 1;
+        }
+        InstEncoding enc = codegen();
 
-        u64 num_bytes = enc.len / 8;
+        u64 num_bytes = enc.bitlen / 8;
         u8 *p = arena_push(output_arena, num_bytes);
 
         for (u64 i = 0; i < num_bytes; ++i)
@@ -72,13 +63,11 @@ int main(void)
 
         printf("Encoding: 0x%" PRIx64 "\n", enc.encoding); 
     }
-
+    
     u8 *base = (u8*)output_arena + output_arena->base;
     fwrite(base, output_arena->pos, 1, file_output);
 
     fclose(file_output);
-
-    #endif
 
     return 0;
 }

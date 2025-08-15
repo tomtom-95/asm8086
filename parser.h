@@ -7,16 +7,17 @@
 
 typedef enum OperandKind
 {
-    OP_NULL   = (1 << 0),
-    OP_REG8   = (1 << 1),
-    OP_REG16  = (1 << 2),
-    OP_MEM    = (1 << 3),
-    OP_ACC8   = (1 << 4),
-    OP_ACC16  = (1 << 5),
-    OP_IMM8   = (1 << 6),
-    OP_IMM16  = (1 << 7),
-    OP_DADDR  = (1 << 8),
-    OP_SEGREG = (1 << 9),
+    OP_NULL         = 0,
+    OP_REG8         = (1u << 1),
+    OP_REG16        = (1u << 2),
+    OP_MEM          = (1u << 3),
+    OP_ACC8         = (1u << 4),
+    OP_ACC16        = (1u << 5),
+    OP_IMMEDIATE    = (1u << 6),
+    OP_IMMEDIATE8   = (1u << 7),
+    OP_IMMEDIATE16  = (1u << 8),
+    OP_DADDR        = (1u << 9),
+    OP_SEGREG       = (1u << 10),
 }
 OperandKind;
 
@@ -26,6 +27,9 @@ struct EffectiveAddress {
     TokenKind register_index;
     s16       displacement;
     s16       direct_address;
+
+    u64       mod;
+    u64       rm;
 };
 
 typedef struct Operand Operand;
@@ -67,8 +71,12 @@ OperandKind op_kind_from_reg_lut[TOK_COUNT] = {
 };
 
 
-// internal s32              is_base(TokenKind r);
-// internal s32              is_index(TokenKind r);
+/* Encoding of table 4.10 in Intel manual */
+internal u64              eaddr_encode_rm(TokenKind base, TokenKind index); 
+internal u64              eaddr_encode_mod(EffectiveAddress eaddr);
+
+internal s32              is_base(TokenKind r);
+internal s32              is_index(TokenKind r);
 
 internal void             parse(TokenList *token_list, u64 *idx);
 internal void             parse_line_(TokenList *token_list, u64 *idx);

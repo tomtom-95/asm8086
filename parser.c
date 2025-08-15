@@ -2,17 +2,71 @@
 #include "tokenizer.h"
 #include "parser.h"
 
-// internal s32
-// is_base(TokenKind r)
-// {
-//     return r==TOK_BX || r==TOK_BP;
-// }
-// 
-// internal s32
-// is_index(TokenKind r)
-// {
-//     return r==TOK_SI || r==TOK_DI;
-// }
+internal s32
+is_base(TokenKind r)
+{
+    return r==TOK_BX || r==TOK_BP;
+}
+
+internal s32
+is_index(TokenKind r)
+{
+    return r==TOK_SI || r==TOK_DI;
+}
+
+static u64
+eaddr_encode_rm(TokenKind base, TokenKind index)
+{
+    if (base == TOK_NULL) { base = index; index = TOK_NULL; }
+
+    if (is_base(base) && is_index(index)) {
+        return (((u64)(base==TOK_BP)) << 1) | ((u64)(index==TOK_DI));
+    }
+    if (index == TOK_NULL) {
+        switch (base) {
+            case TOK_SI:   return 4;
+            case TOK_DI:   return 5;
+            case TOK_BP:   return 6;
+            case TOK_BX:   return 7;
+            case TOK_NULL: return 6;
+            default: break;
+        }
+    }
+    assert(0);
+}
+
+static u64
+eaddr_encode_mod(EffectiveAddress eaddr)
+{
+    // TODO: this must be fixed to actually know at codegen time if I want to
+    //       emit a displacement byte or not even when displ is 0 (see case [bp])
+    //       the easiest thing is to add a bool to eaddr -> has_displacement
+    //       the flag is set here (or at the caller site) and it is checked at codegen time
+    TokenKind base         = eaddr.register_base;
+    TokenKind index        = eaddr.register_index;
+    s16       displacement = eaddr.displacement;
+    s16       direct_addr  = eaddr.direct_address;
+
+    bool is_displacement_8_bit = (-128 <= displacement && displacement < 128);
+
+    if (base == TOK_BP && index == TOK_NULL && is_displacement_8_bit)
+    {
+        return 1;
+    }
+    else if (direct_addr || !displacement)
+    {
+        return 0;
+    }
+    else if (is_displacement_8_bit)
+    {
+        return 1;
+    }
+    else
+    {
+        return 2; 
+    }
+}
+
 // 
 // internal bool
 // is_register_8_bit(TokenKind r)
@@ -331,7 +385,7 @@ parse_operand(TokenList *token_list, u64 *idx)
         }
         else
         {
-            operand.operand_kind = OP_DADDR;
+            operand.operand_kind = OP_MEM | OP_DADDR;
         }
         operand.effective_address = eaddr;
 
@@ -357,13 +411,13 @@ parse_operand(TokenList *token_list, u64 *idx)
     s16 immediate = parse_imm(token_list, &p);
     if (p)
     {
-        if (-129 < immediate && immediate < 128)
+        if (-128 <= immediate && immediate < 128)
         {
-            operand.operand_kind = OP_IMM8;
+            operand.operand_kind = (OP_IMMEDIATE | OP_IMMEDIATE8);
         }
         else
         {
-            operand.operand_kind = OP_IMM16;
+            operand.operand_kind = (OP_IMMEDIATE | OP_IMMEDIATE16);
         }
 
         operand.immediate = immediate;
@@ -432,6 +486,9 @@ parse_eaddr_(TokenList *token_list, u64 *idx)
     p = *idx;
 
     EffectiveAddress eaddr = parse_eaddr(token_list, &p);
+
+    eaddr.rm  = eaddr_encode_rm(eaddr.register_base, eaddr.register_index);
+    eaddr.mod = eaddr_encode_mod(eaddr);
 
     if (p)
     {

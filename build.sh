@@ -24,6 +24,7 @@ CFLAGS=(
   -Wall -Wextra -Wpedantic -Wconversion -Wno-unused-parameter
   -Wshadow -Wvla -Wwrite-strings -Wstrict-prototypes -Wold-style-definition
   -Wredundant-decls -Wnested-externs -Wmissing-include-dirs
+  -Wno-gnu-binary-literal -Wno-c23-extensions -Wno-unused-variable
   -fsanitize=address
   -g3 -O0 -std=c99
 )

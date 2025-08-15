@@ -36,9 +36,9 @@ struct InstTableKey
     OperandKind src;
 };
 
-InstTableKey instruction_table_key[] = {
+InstTableKey inst_table_keys[] = {
 #define INST(mnemonic, dst, src, ...) { Glue(TOK_, mnemonic), Glue(OP_, dst), Glue(OP_, src) },
-    TABLE_INSTRUCTION_V2
+    TABLE_INSTRUCTION
 #undef INST
 };
 
@@ -48,16 +48,12 @@ struct InstTableEntry
     InstField inst_fields[16];
 };
 
-InstTableEntry instruction_table[] = {
-#define INST(mnemonic, dst, src, ...) __VA_ARGS__,
+InstTableEntry inst_table[] = {
+#define INST(mnemonic, dst, src, ...) { __VA_ARGS__ },
 #define ENTRY(id, value, len) { Glue(INST_, id), Glue(0b, value), len }
-    TABLE_INSTRUCTION_V2
+    TABLE_INSTRUCTION
 #undef ENTRY
 #undef INST
 };
 
-/* Encoding of table 4.10 in Intel manual */
-internal u64        encode_rm(TokenKind base, TokenKind index); 
-internal u64        encode_mod(EffectiveAddress eaddr);
-
-InstEncoding        codegen(void);
+InstEncoding codegen(void);
