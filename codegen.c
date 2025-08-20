@@ -148,7 +148,7 @@
 //     return (src_immediate_16_bit || dst_immediate_16_bit);
 // }
 
-u64
+u8
 encode_sr(Operand operand)
 {
     switch (operand.register_segment)
@@ -171,7 +171,12 @@ codegen(void)
         bool mnemonic_found    = (inst_table_keys[i].mnemonic == instruction_data.mnemonic);
         bool operand_dst_found = (inst_table_keys[i].dst & instruction_data.dst.operand_kind);
 
-        bool operand_src_found;
+        if (mnemonic_found)
+        {
+            printf("here");
+        }
+
+        bool operand_src_found = false;
         if (instruction_data.src.operand_kind == OP_NONE)
         {
             operand_src_found = (inst_table_keys[i].src == OP_NONE);
@@ -192,6 +197,7 @@ codegen(void)
                 {
                     enc.encoding <<=  field.bitlen;
                     enc.encoding |= field.value;
+                    enc.bitlen += field.bitlen;
                 }
                 else if (field.id == INST_REG)
                 {
@@ -208,6 +214,7 @@ codegen(void)
                     }
 
                     enc.encoding |= reg_field_lut[reg_operand.register_general];
+                    enc.bitlen += field.bitlen;
                 }
                 else if (field.id == INST_MOD)
                 {
@@ -224,6 +231,7 @@ codegen(void)
                     }
 
                     enc.encoding |= mem_operand.effective_address.mod;
+                    enc.bitlen += field.bitlen;
                 }
                 else if (field.id == INST_RM)
                 {
@@ -257,6 +265,8 @@ codegen(void)
                     {
                         enc.encoding |= reg_field_lut[reg_operand.register_general]; 
                     }
+
+                    enc.bitlen += field.bitlen;
                 }
                 else if (field.id == INST_DISP)
                 {
@@ -282,6 +292,7 @@ codegen(void)
                         {
                             enc.encoding <<= 8;
                             enc.encoding |= (u8)((s8)displacement);
+                            enc.bitlen += 8;
                         }
                         else
                         {
@@ -289,6 +300,7 @@ codegen(void)
                             enc.encoding |= (u8)(((u16)displacement) & 0xff);
                             enc.encoding <<= 8;
                             enc.encoding |= (u8)((((u16)displacement) >> 8) & 0xff);
+                            enc.bitlen += 16;
                         }
                     }
                     else
@@ -301,6 +313,7 @@ codegen(void)
                             enc.encoding |= (u8)(((u16)daddr) & 0xff);
                             enc.encoding <<= 8;
                             enc.encoding |= (u8)((((u16)daddr) >> 8) & 0xff);
+                            enc.bitlen += 16;
                         }
                     }
                 }
@@ -322,6 +335,7 @@ codegen(void)
                     enc.encoding |= (u8)(((u16)daddr) & 0xff);
                     enc.encoding <<= 8;
                     enc.encoding |= (u8)((((u16)daddr) >> 8) & 0xff);
+                    enc.bitlen += 16;
                 }
                 else if (field.id == INST_IMM8)
                 {
@@ -339,6 +353,7 @@ codegen(void)
 
                     enc.encoding <<= 8;
                     enc.encoding |= (u8)((s8)imm);
+                    enc.bitlen += field.bitlen;
                 }
                 else if (field.id == INST_IMM16)
                 {
@@ -358,13 +373,31 @@ codegen(void)
                     enc.encoding |= (u8)(((u16)imm) & 0xff);
                     enc.encoding <<= 8;
                     enc.encoding |= (u8)((((u16)imm) >> 8) & 0xff);
+                    enc.bitlen += field.bitlen;
+                }
+                else if (field.id == INST_SR)
+                {
+                    Operand sr_operand = {0};
+                    if (instruction_data.src.operand_kind & OP_SEGREG)
+                    {
+                        sr_operand = instruction_data.src;
+                    }
+                    else
+                    {
+                        sr_operand = instruction_data.dst;
+                    }
+
+                    u8 sr = encode_sr(sr_operand);
+                    enc.encoding <<= field.bitlen;
+                    enc.encoding |= sr;
+                    enc.bitlen += field.bitlen;
                 }
             } // for (u64 j = 0; inst.inst_fields[j].id != INST_END; ++j)
 
             // Calculate the length in bit of the instruction just encoded
-            s8 msb_pos = get_msb_pos(enc.encoding);
-            assert(msb_pos != -1);
-            enc.bitlen = (u8)(msb_pos + 1);
+            // s8 msb_pos = get_msb_pos(enc.encoding);
+            // assert(msb_pos != -1);
+            // enc.bitlen = (u8)(msb_pos + 1);
 
             return enc;
         } // if (mnemonic_found && operand_dst_found && operand_src_found)
