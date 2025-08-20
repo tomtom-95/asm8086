@@ -4,7 +4,8 @@
 #define TABLE_MNEMONIC  \
     ENTRY(MOV,   mov)   \
     ENTRY(PUSH,  push)  \
-    ENTRY(POP,   pop)
+    ENTRY(POP,   pop)   \
+    ENTRY(XCHG,  xchg) 
 
 // Chapter 4, Table 4.9: REG Field Encoding
 // NOTE: the same table applies in MOD=11 case when encoding R/M field (see table 4.10)
@@ -128,15 +129,6 @@
     ImplW(0)   \
     ImplMod(0)
 
-// #define TABLE_INSTRUCTION \
-//     INST(MOV, REGMEM_TOFROM_REG, { OPCODE(100010), D,        W,        MOD,        REG, RM, DISP, END }) \
-//     INST(MOV, IMM_TO_REGMEM,     { OPCODE(1100011), W, MOD, OPCODE(000), RM, DISP, IMM, END })      \
-//     INST(MOV, IMM_TO_REG,        { OPCODE(1011), W, REG, IMM, END })                                \
-//     INST(MOV, MEM_TO_ACC,        { OPCODE(1010000), W, ADDR, END })                                 \
-//     INST(MOV, ACC_TO_MEM,        { OPCODE(1010001), W, ADDR, END })                                 \
-//     INST(MOV, REGMEM_TO_SEGREG,  { OPCODE(10001110), MOD, OPCODE(0), SR, RM, DISP, END })           \
-//     INST(MOV, SEGREG_TO_REGMEM,  { OPCODE(10001100), MOD, OPCODE(0), SR, RM, DISP, END })
-
 #define TABLE_INSTRUCTION \
     INST(MOV,  REG8,     REG8,        { OPCODE(100010),  ImplD(0), ImplW(0), ImplMod(11),                    REG,                  RM,              END }) \
     INST(MOV,  REG16,    REG16,       { OPCODE(100010),  ImplD(0), ImplW(1), ImplMod(11),                    REG,                  RM,              END }) \
@@ -161,6 +153,13 @@
     INST(PUSH, SEGREG,   NONE,        { OPCODE(000),                                                              SR, OPCODE(110),                  END }) \
     INST(POP,  MEM,      NONE,        { OPCODE(10001111),                    MOD,         OPCODE(000),                             RM, DISP,        END }) \
     INST(POP,  REG16,    NONE,        { OPCODE(01011),                                                       REG,                                   END }) \
-    INST(POP,  SEGREG,   NONE,        { OPCODE(000),                                                              SR, OPCODE(111),                  END })
+    INST(POP,  SEGREG,   NONE,        { OPCODE(000),                                                              SR, OPCODE(111),                  END }) \
+    INST(XCHG, ACC16,    REG16,       { OPCODE(10010),                                                       REG,                                   END }) \
+    INST(XCHG, REG8,     REG8,        { OPCODE(1000011),           ImplW(0), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(XCHG, REG16,    REG16,       { OPCODE(1000011),           ImplW(1), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(XCHG, MEM,      REG8,        { OPCODE(1000011),           ImplW(0), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(XCHG, MEM,      REG16,       { OPCODE(1000011),           ImplW(1), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(XCHG, REG8,     MEM,         { OPCODE(1000011),           ImplW(0), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(XCHG, REG16,    MEM,         { OPCODE(1000011),           ImplW(1), MOD,                            REG,                  RM, DISP,        END })
 
 #endif // TABLES_H

@@ -67,16 +67,6 @@ eaddr_encode_mod(EffectiveAddress eaddr)
     }
 }
 
-// 
-// internal bool
-// is_register_8_bit(TokenKind r)
-// {
-//     bool is_low = (r == TOK_AL || r == TOK_CL || r == TOK_DL || r == TOK_BL);
-//     bool is_high = (r == TOK_AH || r == TOK_CH || r == TOK_DH || r == TOK_BH);
-// 
-//     return is_low || is_high;
-// }
-
 internal void
 parse(TokenList *token_list, u64 *idx)
 {
@@ -98,6 +88,14 @@ internal void
 parse_line_(TokenList *token_list, u64 *idx)
 {
     u64 p = *idx;
+
+    while (parse_terminal(token_list, TOK_EOL, &p).token_kind == TOK_EOL)
+    {
+        printf("Skipping empty line");
+        *idx = p;
+    }
+
+    p = *idx;
 
     parse_line(token_list, &p);
     parse_terminal(token_list, TOK_EOL, &p);
@@ -346,7 +344,8 @@ parse_mnemonic(TokenList *token_list, u64 *idx)
 {
     TokenKind token_kind = token_list->token[*idx].token_kind;
 
-    if (TOK_MOV <= token_kind && token_kind <= TOK_POP)
+    // TODO: every time a new mnemonic is add this range must be changed (ugly)
+    if (TOK_MOV <= token_kind && token_kind <= TOK_XCHG)
     {
         ++(*idx);
         return token_kind;
