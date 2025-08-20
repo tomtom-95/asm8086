@@ -164,15 +164,22 @@ encode_sr(Operand operand)
 InstEncoding
 codegen(void)
 {
-    // TODO: after encoding is done, calculate the least number of byte the encode can fit into
-    //       so that I get an encodinglen
     InstEncoding enc = {0};
 
     for (u64 i = 0; i < ArrayCount(inst_table_keys); ++i)
     {
         bool mnemonic_found    = (inst_table_keys[i].mnemonic == instruction_data.mnemonic);
         bool operand_dst_found = (inst_table_keys[i].dst & instruction_data.dst.operand_kind);
-        bool operand_src_found = (inst_table_keys[i].src & instruction_data.src.operand_kind);
+
+        bool operand_src_found;
+        if (instruction_data.src.operand_kind == OP_NONE)
+        {
+            operand_src_found = (inst_table_keys[i].src == OP_NONE);
+        }
+        else
+        {
+            operand_src_found = (inst_table_keys[i].src & instruction_data.src.operand_kind);
+        }
 
         if (mnemonic_found && operand_dst_found && operand_src_found)
         {
@@ -354,6 +361,7 @@ codegen(void)
                 }
             } // for (u64 j = 0; inst.inst_fields[j].id != INST_END; ++j)
 
+            // Calculate the length in bit of the instruction just encoded
             s8 msb_pos = get_msb_pos(enc.encoding);
             assert(msb_pos != -1);
             enc.bitlen = (u8)(msb_pos + 1);

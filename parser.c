@@ -230,11 +230,11 @@ parse_instruction_tail(TokenList *token_list, u64 *idx)
 
     p = *idx;
 
-    operand_src = parse_operand_(token_list,  &p);
+    operand_dst = parse_operand_(token_list,  &p);
 
     if (p)
     {
-        instruction_data.src = operand_src;
+        instruction_data.dst = operand_dst;
         *idx = p;
         return;
     }

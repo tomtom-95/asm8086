@@ -7,7 +7,7 @@
 
 typedef enum OperandKind
 {
-    OP_NULL         = 0,
+    OP_NONE         = 0,
     OP_REG8         = (1u << 1),
     OP_REG16        = (1u << 2),
     OP_MEM          = (1u << 3),
@@ -64,7 +64,7 @@ u8 w_field_lut[] = {
 
 /* Look up table for getting OperandKind starting from TokenKind of a reg */
 OperandKind op_kind_from_reg_lut[TOK_COUNT] = {
-  [TOK_NULL] = OP_NULL,
+  [TOK_NULL] = OP_NONE,
 #define ENTRY(id, name, reg_enc, w_enc, op_kind) [Glue(TOK_, id)] = op_kind,
   TABLE_REGISTER_GENERAL
 #undef ENTRY

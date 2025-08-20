@@ -25,3 +25,11 @@ mov ax, [2555]
 mov ax, [16]
 mov [2554], ax
 mov [15], ax
+
+push word [bp + si]
+push word [3000]
+push word [bx + di - 30]
+push cx
+push ax
+push dx
+push cs
