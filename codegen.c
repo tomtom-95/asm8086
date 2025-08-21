@@ -21,15 +21,19 @@ codegen(void)
     for (u64 i = 0; i < ArrayCount(inst_table_keys); ++i)
     {
         bool mnemonic_found    = (inst_table_keys[i].mnemonic == instruction_data.mnemonic);
+        if (mnemonic_found)
+        {
+            printf("Mnemonic found");
+        }
 
         bool operand_dst_found = false;
-        if (instruction_data.dst.operand_kind == OP_NONE)
+        if (instruction_data.dst.operand.operand_kind == OP_NONE)
         {
             operand_dst_found = (inst_table_keys[i].dst == OP_NONE);
         }
         else
         {
-            operand_dst_found = (inst_table_keys[i].dst & instruction_data.dst.operand_kind);
+            operand_dst_found = (inst_table_keys[i].dst & instruction_data.dst.operand.operand_kind);
         }
 
         if (mnemonic_found)
@@ -38,13 +42,13 @@ codegen(void)
         }
 
         bool operand_src_found = false;
-        if (instruction_data.src.operand_kind == OP_NONE)
+        if (instruction_data.src.operand.operand_kind == OP_NONE)
         {
             operand_src_found = (inst_table_keys[i].src == OP_NONE);
         }
         else
         {
-            operand_src_found = (inst_table_keys[i].src & instruction_data.src.operand_kind);
+            operand_src_found = (inst_table_keys[i].src & instruction_data.src.operand.operand_kind);
         }
 
         if (mnemonic_found && operand_dst_found && operand_src_found)
@@ -53,8 +57,8 @@ codegen(void)
             for (u64 j = 0; inst.inst_fields[j].id != INST_END; ++j)
             {
                 InstField field = inst.inst_fields[j];
-                if (field.id == INST_OPCODE || field.id == INST_ImplD ||
-                    field.id == INST_ImplW  || field.id == INST_ImplMod)
+                if (field.id == INST_OPCODE  || field.id == INST_ImplD || field.id == INST_ImplW  ||
+                    field.id == INST_ImplMod || field.id == INST_ImplS)
                 {
                     enc.encoding <<=  field.bitlen;
                     enc.encoding |= field.value;
@@ -64,8 +68,8 @@ codegen(void)
                 {
                     enc.encoding <<= field.bitlen;
 
-                    Operand reg_operand = {0};
-                    if (instruction_data.src.operand_kind & (OP_REG8 | OP_REG16))
+                    Operand_ reg_operand = {0};
+                    if (instruction_data.src.operand.operand_kind & (OP_REG8 | OP_REG16))
                     {
                         reg_operand = instruction_data.src;
                     }
@@ -74,7 +78,7 @@ codegen(void)
                         reg_operand = instruction_data.dst;
                     }
 
-                    enc.encoding |= reg_field_lut[reg_operand.register_general];
+                    enc.encoding |= reg_field_lut[reg_operand.operand.register_general];
                     enc.bitlen += field.bitlen;
                 }
                 else if (field.id == INST_MOD)
@@ -82,13 +86,13 @@ codegen(void)
                     enc.encoding <<= field.bitlen;
 
                     u8 mod;
-                    if (instruction_data.src.operand_kind & (OP_MEM | OP_DADDR))
+                    if (instruction_data.src.operand.operand_kind & (OP_MEM | OP_DADDR))
                     {
-                        mod = (u8)instruction_data.src.effective_address.mod;
+                        mod = (u8)instruction_data.src.operand.effective_address.mod;
                     }
-                    else if (instruction_data.dst.operand_kind & (OP_MEM | OP_DADDR))
+                    else if (instruction_data.dst.operand.operand_kind & (OP_MEM | OP_DADDR))
                     {
-                        mod = (u8)instruction_data.dst.effective_address.mod;
+                        mod = (u8)instruction_data.dst.operand.effective_address.mod;
                     }
                     else
                     {
@@ -102,18 +106,18 @@ codegen(void)
                 {
                     enc.encoding <<= field.bitlen;
 
-                    Operand mem_operand = {0};
-                    Operand reg_operand = {0};
+                    Operand_ mem_operand = {0};
+                    Operand_ reg_operand = {0};
 
-                    if (instruction_data.src.operand_kind & (OP_MEM | OP_DADDR))
+                    if (instruction_data.src.operand.operand_kind & (OP_MEM | OP_DADDR))
                     {
                         mem_operand = instruction_data.src;
                     }
-                    else if (instruction_data.dst.operand_kind & (OP_MEM | OP_DADDR))
+                    else if (instruction_data.dst.operand.operand_kind & (OP_MEM | OP_DADDR))
                     {
                         mem_operand = instruction_data.dst;
                     }
-                    else if (instruction_data.dst.operand_kind & (OP_REG8 | OP_REG16))
+                    else if (instruction_data.dst.operand.operand_kind & (OP_REG8 | OP_REG16))
                     {
                         reg_operand = instruction_data.dst;
                     }
@@ -122,26 +126,26 @@ codegen(void)
                         assert(0);
                     }
 
-                    if (mem_operand.operand_kind)
+                    if (mem_operand.operand.operand_kind)
                     {
-                        enc.encoding |= mem_operand.effective_address.rm;
+                        enc.encoding |= mem_operand.operand.effective_address.rm;
                     }
                     else
                     {
-                        enc.encoding |= reg_field_lut[reg_operand.register_general]; 
+                        enc.encoding |= reg_field_lut[reg_operand.operand.register_general]; 
                     }
 
                     enc.bitlen += field.bitlen;
                 }
                 else if (field.id == INST_DISP)
                 {
-                    Operand mem_operand = {0};
+                    Operand_ mem_operand = {0};
 
-                    if (instruction_data.src.operand_kind & (OP_MEM | OP_DADDR))
+                    if (instruction_data.src.operand.operand_kind & (OP_MEM | OP_DADDR))
                     {
                         mem_operand = instruction_data.src;
                     }
-                    else if (instruction_data.dst.operand_kind & (OP_MEM | OP_DADDR))
+                    else if (instruction_data.dst.operand.operand_kind & (OP_MEM | OP_DADDR))
                     {
                         mem_operand = instruction_data.dst;
                     }
@@ -149,9 +153,9 @@ codegen(void)
                     // TODO: I kinda hate this, maybe I prefer a flag that tells me
                     //       if I actually need to encode a displacement (even if it
                     //       is one byte with 0)
-                    if (mem_operand.effective_address.mod)
+                    if (mem_operand.operand.effective_address.mod)
                     {
-                        s16 displacement = mem_operand.effective_address.displacement;
+                        s16 displacement = mem_operand.operand.effective_address.displacement;
 
                         if (-128 <= displacement && displacement < 128)
                         {
@@ -170,9 +174,9 @@ codegen(void)
                     }
                     else
                     {
-                        if (mem_operand.effective_address.direct_address) // TODO: should I handle the case [0]? there should be a flag that says need_direct_address 
+                        if (mem_operand.operand.effective_address.direct_address) // TODO: should I handle the case [0]? there should be a flag that says need_direct_address 
                         {
-                            s16 daddr = mem_operand.effective_address.direct_address;
+                            s16 daddr = mem_operand.operand.effective_address.direct_address;
 
                             enc.encoding <<= 8;
                             enc.encoding |= (u8)(((u16)daddr) & 0xff);
@@ -184,8 +188,8 @@ codegen(void)
                 }
                 else if (field.id == INST_ADDR)
                 {
-                    Operand daddr_operand = {0};
-                    if (instruction_data.src.operand_kind & OP_DADDR)
+                    Operand_ daddr_operand = {0};
+                    if (instruction_data.src.operand.operand_kind & OP_DADDR)
                     {
                         daddr_operand = instruction_data.src;
                     }
@@ -194,7 +198,7 @@ codegen(void)
                         daddr_operand = instruction_data.dst;
                     }
 
-                    s16 daddr = daddr_operand.effective_address.direct_address;
+                    s16 daddr = daddr_operand.operand.effective_address.direct_address;
 
                     enc.encoding <<= 8;
                     enc.encoding |= (u8)(((u16)daddr) & 0xff);
@@ -204,8 +208,8 @@ codegen(void)
                 }
                 else if (field.id == INST_IMM8)
                 {
-                    Operand imm_operand = {0};
-                    if (instruction_data.src.operand_kind & OP_IMMEDIATE)
+                    Operand_ imm_operand = {0};
+                    if (instruction_data.src.operand.operand_kind & OP_IMMEDIATE)
                     {
                         imm_operand = instruction_data.src;
                     }
@@ -214,7 +218,7 @@ codegen(void)
                         imm_operand = instruction_data.dst;
                     }
 
-                    s16 imm = imm_operand.immediate;
+                    s16 imm = imm_operand.operand.immediate;
 
                     enc.encoding <<= 8;
                     enc.encoding |= (u8)((s8)imm);
@@ -222,8 +226,8 @@ codegen(void)
                 }
                 else if (field.id == INST_IMM16)
                 {
-                    Operand imm_operand = {0};
-                    if (instruction_data.src.operand_kind & OP_IMMEDIATE)
+                    Operand_ imm_operand = {0};
+                    if (instruction_data.src.operand.operand_kind & OP_IMMEDIATE)
                     {
                         imm_operand = instruction_data.src;
                     }
@@ -232,7 +236,7 @@ codegen(void)
                         imm_operand = instruction_data.dst;
                     }
 
-                    s16 imm = imm_operand.immediate;
+                    s16 imm = imm_operand.operand.immediate;
 
                     enc.encoding <<= 8;
                     enc.encoding |= (u8)(((u16)imm) & 0xff);
@@ -242,8 +246,8 @@ codegen(void)
                 }
                 else if (field.id == INST_SR)
                 {
-                    Operand sr_operand = {0};
-                    if (instruction_data.src.operand_kind & OP_SEGREG)
+                    Operand_ sr_operand = {0};
+                    if (instruction_data.src.operand.operand_kind & OP_SEGREG)
                     {
                         sr_operand = instruction_data.src;
                     }
@@ -252,15 +256,15 @@ codegen(void)
                         sr_operand = instruction_data.dst;
                     }
 
-                    u8 sr = encode_sr(sr_operand);
+                    u8 sr = encode_sr(sr_operand.operand);
                     enc.encoding <<= field.bitlen;
                     enc.encoding |= sr;
                     enc.bitlen += field.bitlen;
                 }
                 else if (field.id == INST_DATA8)
                 {
-                    Operand data8_operand = {0};
-                    if (instruction_data.src.operand_kind & OP_IMMEDIATE)
+                    Operand_ data8_operand = {0};
+                    if (instruction_data.src.operand.operand_kind & OP_IMMEDIATE)
                     {
                         data8_operand = instruction_data.src;
                     }
@@ -269,9 +273,28 @@ codegen(void)
                         data8_operand = instruction_data.dst;
                     }
 
-                    u8 data8 = (u8)data8_operand.immediate;
+                    u8 data8 = (u8)data8_operand.operand.immediate;
                     enc.encoding <<= field.bitlen;
                     enc.encoding |= data8;
+                    enc.bitlen += field.bitlen;
+                }
+                else if (field.id == INST_W)
+                {
+                    u8 w = 0;
+
+                    PrefixSize prefix_src = instruction_data.src.prefix_operand.prefix_size;
+                    PrefixSize prefix_dst = instruction_data.dst.prefix_operand.prefix_size;
+                    if ((prefix_src & PREFIX_SIZE_BYTE) || (prefix_dst & PREFIX_SIZE_BYTE))
+                    {
+                        w = 0;
+                    }
+                    else if ((prefix_src & PREFIX_SIZE_WORD) || (prefix_dst & PREFIX_SIZE_WORD))
+                    {
+                        w = 1;
+                    }
+
+                    enc.encoding <<= field.bitlen;
+                    enc.encoding |= w;
                     enc.bitlen += field.bitlen;
                 }
             } // for (u64 j = 0; inst.inst_fields[j].id != INST_END; ++j)

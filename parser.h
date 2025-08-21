@@ -5,6 +5,30 @@
 #include "tables.h"
 #include "tokenizer.h"
 
+typedef enum PrefixSegOvr
+{
+    PREFIX_SEGOVR_NONE = 0,
+#define ENTRY(id, name, serial) Glue(PREFIX_SEGOVR_, id) = (1u << serial),
+    TABLE_REGISTER_SEGMENT
+#undef ENTRY
+}
+PrefixSegOvr;
+
+typedef enum PrefixSize
+{
+    PREFIX_SIZE_NONE = 0,
+#define ENTRY(id, name, serial) Glue(PREFIX_SIZE_, id) = (1u << serial),
+    TABLE_OPERAND_PREFIX_SIZE
+#undef ENTRY
+}
+PrefixSize;
+
+typedef struct PrefixOperand PrefixOperand;
+struct PrefixOperand {
+    PrefixSegOvr prefix_seg_ovr;
+    PrefixSize   prefix_size;
+};
+
 typedef enum OperandKind
 {
     OP_NONE         = 0,
@@ -41,11 +65,17 @@ struct Operand {
     s16              immediate;
 };
 
+typedef struct Operand_ Operand_;
+struct Operand_ {
+    PrefixOperand prefix_operand;
+    Operand       operand;
+};
+
 typedef struct InstructionData InstructionData;
 struct InstructionData {
     TokenKind mnemonic;
-    Operand   dst;
-    Operand   src; 
+    Operand_   dst;
+    Operand_   src; 
 };
 
 /* Look up table for getting encoding of REG field starting from TokenKind (table 4.9 of Intel manual) */
@@ -70,6 +100,14 @@ OperandKind op_kind_from_reg_lut[TOK_COUNT] = {
 #undef ENTRY
 };
 
+/* Look up table for getting Segment Override prefix from TokenKind of a segment register */
+PrefixSegOvr seg_ovr_lut[TOK_COUNT] = {
+#define ENTRY(id, name, serial) [Glue(TOK_, id)] = Glue(PREFIX_SEGOVR_, id),
+    TABLE_REGISTER_SEGMENT
+#undef ENTRY
+};
+
+
 
 /* Encoding of table 4.10 in Intel manual */
 internal u64              eaddr_encode_rm(TokenKind base, TokenKind index); 
@@ -85,8 +123,8 @@ internal void             parse_label(TokenList *token_list, u64 *idx);
 internal void             parse_instruction(TokenList *token_list, u64 *idx);
 internal void             parse_instruction_tail(TokenList *token_list, u64 *idx);
 internal TokenKind        parse_mnemonic_(TokenList *token_list, u64 *idx);
-internal Operand          parse_operand_(TokenList *token_list, u64 *idx);
-internal void             parse_opr_prefix(TokenList *token_list, u64 *idx);
+internal Operand_         parse_operand_(TokenList *token_list, u64 *idx);
+internal PrefixOperand    parse_opr_prefix(TokenList *token_list, u64 *idx);
 internal void             parse_prefix(TokenList *token_list, u64 *idx);
 internal TokenKind        parse_mnemonic(TokenList *token_list, u64 *idx);
 internal Operand          parse_operand(TokenList *token_list, u64 *idx);
@@ -102,8 +140,8 @@ internal TokenKind        parse_register_base(TokenList *token_list, u64 *idx);
 internal TokenKind        parse_register_index(TokenList *token_list, u64 *idx);
 internal s16              parse_imm(TokenList *token_list, u64 *idx);
 internal TokenKind        parse_opr_math(TokenList *token_list, u64 *idx);
-internal TokenKind        parse_opr_size(TokenList *token_list, u64 *idx);
-internal void             parse_seg_ovr(TokenList *token_list, u64 *idx);
+internal PrefixSize       parse_opr_size(TokenList *token_list, u64 *idx);
+internal PrefixSegOvr     parse_seg_ovr(TokenList *token_list, u64 *idx);
 internal Token            parse_terminal(TokenList *token_list, TokenKind token_kind, u64 *idx);
 
 internal s16              parse_signed_num(TokenList *token_list, u64 *idx);

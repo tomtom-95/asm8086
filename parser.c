@@ -76,6 +76,8 @@ parse(TokenList *token_list, u64 *idx)
         printf("Line parsed\n");
         // Parsing of the line was successfull
         // I can emit machine code if the instruction does not involve a label
+
+        return;
     }
     else
     {
@@ -209,8 +211,8 @@ parse_instruction(TokenList *token_list, u64 *idx)
 internal void
 parse_instruction_tail(TokenList *token_list, u64 *idx)
 {
-    Operand operand_src = {0};
-    Operand operand_dst = {0};
+    Operand_ operand_src = {0};
+    Operand_ operand_dst = {0};
 
     u64 p = *idx;
 
@@ -275,22 +277,25 @@ parse_mnemonic_(TokenList *token_list, u64 *idx)
     return TOK_NULL;
 }
 
-internal Operand
+internal Operand_
 parse_operand_(TokenList *token_list, u64 *idx)
 {
-    Operand res = {0};
+    Operand_ res = {0};
 
     u64 p = *idx;
 
     while (p)
     {
         *idx = p;
-        // TODO: must store in a list the prefixes that has been parsed
-        parse_opr_prefix(token_list, &p);
+        PrefixOperand prefix_operand = parse_opr_prefix(token_list, &p);
+        res.prefix_operand.prefix_seg_ovr |= prefix_operand.prefix_seg_ovr;
+        res.prefix_operand.prefix_size |= prefix_operand.prefix_size;
     }
 
     p = *idx;
-    res = parse_operand(token_list, &p);
+
+    Operand operand = parse_operand(token_list, &p);
+    res.operand = operand;
 
     if (p != 0)
     {
@@ -299,33 +304,37 @@ parse_operand_(TokenList *token_list, u64 *idx)
     }
 
     *idx = 0;
-    return res;
+    return (Operand_){0};
 }
 
-internal void
+internal PrefixOperand
 parse_opr_prefix(TokenList *token_list, u64 *idx)
 {
     u64 p = *idx;
+    PrefixOperand prefix_operand = {0};
 
-    parse_opr_size(token_list, &p);
+    PrefixSize opr_size = parse_opr_size(token_list, &p);
 
     if (p)
     {
         *idx = p;
-        return;
+        prefix_operand.prefix_size = opr_size;
+        return prefix_operand;
     }
 
     p = *idx;
 
-    parse_seg_ovr(token_list, &p);
+    PrefixSegOvr prefix_seg_ovr = parse_seg_ovr(token_list, &p);
 
     if (p)
     {
         *idx = p;
-        return;
+        prefix_operand.prefix_seg_ovr = prefix_seg_ovr;
+        return prefix_operand;
     }
 
     *idx = 0;
+    return prefix_operand;
 }
 
 internal void
@@ -345,7 +354,7 @@ parse_mnemonic(TokenList *token_list, u64 *idx)
     TokenKind token_kind = token_list->token[*idx].token_kind;
 
     // TODO: every time a new mnemonic is add this range must be changed (ugly)
-    if (TOK_MOV <= token_kind && token_kind <= TOK_LDS)
+    if (TOK_MOV <= token_kind && token_kind <= TOK_INC)
     {
         ++(*idx);
         return token_kind;
@@ -707,35 +716,42 @@ parse_opr_math(TokenList *token_list, u64 *idx)
     return TOK_NULL;
 }
 
-internal TokenKind
+internal PrefixSize
 parse_opr_size(TokenList *token_list, u64 *idx)
 {
     TokenKind token_kind = token_list->token[*idx].token_kind;
-    if (token_kind == TOK_BYTE || token_kind == TOK_WORD)
+
+    if (token_kind == TOK_BYTE)
     {
         ++(*idx);
-        return token_kind;
+        return PREFIX_SIZE_BYTE;
+    }
+    else if (token_kind == TOK_WORD)
+    {
+        ++(*idx);
+        return PREFIX_SIZE_WORD;
     }
 
     *idx = 0;
-    return TOK_NULL;
+    return PREFIX_SIZE_NONE;
 }
 
-internal void
+internal PrefixSegOvr
 parse_seg_ovr(TokenList *token_list, u64 *idx)
 {
     u64 p = *idx;
 
-    parse_register_segment(token_list, &p);
+    TokenKind register_segment = parse_register_segment(token_list, &p);
     parse_terminal(token_list, TOK_COLON, &p);
 
     if (p)
     {
         *idx = p;
-        return;
+        return seg_ovr_lut[register_segment];
     }
 
     *idx = 0;
+    return PREFIX_SEGOVR_NONE;
 }
 
 s16

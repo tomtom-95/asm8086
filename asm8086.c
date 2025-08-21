@@ -44,6 +44,7 @@ int main(void)
     u64 idx = 1;
     while (idx < token_list.cnt)
     {
+        instruction_data = (InstructionData){0}; 
         parse(&token_list, &idx);
         if (!idx)
         {
