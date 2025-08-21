@@ -345,7 +345,7 @@ parse_mnemonic(TokenList *token_list, u64 *idx)
     TokenKind token_kind = token_list->token[*idx].token_kind;
 
     // TODO: every time a new mnemonic is add this range must be changed (ugly)
-    if (TOK_MOV <= token_kind && token_kind <= TOK_XCHG)
+    if (TOK_MOV <= token_kind && token_kind <= TOK_LDS)
     {
         ++(*idx);
         return token_kind;

@@ -21,7 +21,21 @@ codegen(void)
     for (u64 i = 0; i < ArrayCount(inst_table_keys); ++i)
     {
         bool mnemonic_found    = (inst_table_keys[i].mnemonic == instruction_data.mnemonic);
-        bool operand_dst_found = (inst_table_keys[i].dst & instruction_data.dst.operand_kind);
+
+        bool operand_dst_found = false;
+        if (instruction_data.dst.operand_kind == OP_NONE)
+        {
+            operand_dst_found = (inst_table_keys[i].dst == OP_NONE);
+        }
+        else
+        {
+            operand_dst_found = (inst_table_keys[i].dst & instruction_data.dst.operand_kind);
+        }
+
+        if (mnemonic_found)
+        {
+            printf("Mnemonic found\n");
+        }
 
         bool operand_src_found = false;
         if (instruction_data.src.operand_kind == OP_NONE)
@@ -241,6 +255,23 @@ codegen(void)
                     u8 sr = encode_sr(sr_operand);
                     enc.encoding <<= field.bitlen;
                     enc.encoding |= sr;
+                    enc.bitlen += field.bitlen;
+                }
+                else if (field.id == INST_DATA8)
+                {
+                    Operand data8_operand = {0};
+                    if (instruction_data.src.operand_kind & OP_IMMEDIATE)
+                    {
+                        data8_operand = instruction_data.src;
+                    }
+                    else
+                    {
+                        data8_operand = instruction_data.dst;
+                    }
+
+                    u8 data8 = (u8)data8_operand.immediate;
+                    enc.encoding <<= field.bitlen;
+                    enc.encoding |= data8;
                     enc.bitlen += field.bitlen;
                 }
             } // for (u64 j = 0; inst.inst_fields[j].id != INST_END; ++j)
