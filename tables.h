@@ -18,7 +18,13 @@
     ENTRY(POPF,  popf)  \
     ENTRY(ADD,   add)   \
     ENTRY(ADC,   adc)   \
-    ENTRY(INC,   inc)
+    ENTRY(INC,   inc)   \
+    ENTRY(AAA,   aaa)   \
+    ENTRY(DAA,   daa)   \
+    ENTRY(SUB,   sub)   \
+    ENTRY(SBB,   sbb)   \
+    ENTRY(DEC,   dec)   \
+    ENTRY(NEG,   neg)
 
 // Chapter 4, Table 4.9: REG Field Encoding
 // NOTE: the same table applies in MOD=11 case when encoding R/M field (see table 4.10)
@@ -83,46 +89,19 @@
     ENTRYBASE  (BP,     110) \
     ENTRYBASE  (BX,     111)
 
-
-// #define TABLE_NODE_NON_TERMINAL     \
-//     ENTRY(EADDR__,     eaddr__)     \
-//     ENTRY(EADDR_,      eaddr_)      \
-//     ENTRY(EADDR,       eaddr)       \
-//     ENTRY(REG_BASE,    reg_base)    \
-//     ENTRY(REG_IDX,     reg_idx)     \
-//     ENTRY(SIGNED_NUM,  signed_num)  \
-//     ENTRY(SIGNED_ZERO, signed_zero) \
-//     ENTRY(DIRECT_ADDR, direct_addr) \
-//     ENTRY(LINE_ ,      line_)       \
-//     ENTRY(LINE,        line)        \
-//     ENTRY(LBL,         lbl)         \
-//     ENTRY(INST,        inst)        \
-//     ENTRY(MNEMONIC_,   mnemonic_)   \
-//     ENTRY(MNEMONIC,    mnemonic)    \
-//     ENTRY(OPERAND_,    operand_)    \
-//     ENTRY(OPERAND,     operand)     \
-//     ENTRY(REG_GEN,     reg_gen)     \
-//     ENTRY(REG_SEG,     reg_seg)     \
-//     ENTRY(PREFIX,      prefix)      \
-//     ENTRY(OPR_PREFIX,  opr_prefix)  \
-//     ENTRY(OPR_MATH,    opr_math)    \
-//     ENTRY(OPR_SIZE,    opr_size)    \
-//     ENTRY(SEG_OVR,     seg_ovr)     \
-//     ENTRY(IMM,         imm)
-// 
 #define OPCODE(bits)   ENTRY(OPCODE,   bits, sizeof(#bits) - 1)
-#define MOD            ENTRY(MOD,      0,    2 )
-#define REG            ENTRY(REG,      0,    3 )
-#define SR             ENTRY(SR,       0,    2 )
-#define RM             ENTRY(RM,       0,    3 )
-#define DISP           ENTRY(DISP,     0,    0 )
-#define DATA8          ENTRY(DATA8,    0,    8 )
-#define IMM8           ENTRY(IMM8,     0,    8 )
-#define IMM16          ENTRY(IMM16,    0,    16)
-#define ADDR           ENTRY(ADDR,     0,    0 )
-#define D              ENTRY(D,        0,    1 )
-#define W              ENTRY(W,        0,    1 )
-#define END            ENTRY(END,      0,    0 )
+#define MOD            ENTRY(MOD,      0,    2                )
+#define REG            ENTRY(REG,      0,    3                )
+#define SR             ENTRY(SR,       0,    2                )
+#define RM             ENTRY(RM,       0,    3                )
+#define DISP           ENTRY(DISP,     0,    0                )
+#define DATA8          ENTRY(DATA8,    0,    8                )
+#define IMM8           ENTRY(IMM8,     0,    8                )
+#define IMM16          ENTRY(IMM16,    0,    16               )
+#define ADDR           ENTRY(ADDR,     0,    0                )
+#define D              ENTRY(D,        0,    1                )
+#define W              ENTRY(W,        0,    1                )
+#define END            ENTRY(END,      0,    0                )
 
 #define ImplD(bit)     ENTRY(ImplD,   bit,  1)
 #define ImplW(bit)     ENTRY(ImplW,   bit,  1)
@@ -220,6 +199,36 @@
     INST(ADC,   REG16,     IMMEDIATE8,  { OPCODE(100000),   ImplS(1),           ImplW(1), MOD,         OPCODE(010),                             RM, DISP, IMM8,  END }) \
     INST(INC,   MEM,       NONE,        { OPCODE(1111111),                      W,        MOD,         OPCODE(000),                             RM, DISP,        END }) \
     INST(INC,   REG8,      NONE,        { OPCODE(1111111),                      ImplW(0), ImplMod(11), OPCODE(000),                             RM,              END }) \
-    INST(INC,   REG16,     NONE,        { OPCODE(01000),                                                                  REG,                                   END })
+    INST(INC,   REG16,     NONE,        { OPCODE(01000),                                                                  REG,                                   END }) \
+    INST(AAA,   NONE,      NONE,        { OPCODE(00110111),                                                                                                      END }) \
+    INST(DAA,   NONE,      NONE,        { OPCODE(00100111),                                                                                                      END }) \
+    INST(SUB,   REG8,      REG8,        { OPCODE(001010),             ImplD(0), ImplW(0), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(SUB,   REG16,     REG16,       { OPCODE(001010),             ImplD(0), ImplW(1), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(SUB,   ACC8,      IMMEDIATE8,  { OPCODE(0010110),                      ImplW(0),                                                                 IMM8,  END }) \
+    INST(SUB,   ACC16,     IMMEDIATE16, { OPCODE(0010110),                      ImplW(1),                                                                 IMM16, END }) \
+    INST(SUB,   REG8,      MEM,         { OPCODE(001010),             ImplD(1), ImplW(0), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(SUB,   REG16,     MEM,         { OPCODE(001010),             ImplD(1), ImplW(1), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(SUB,   MEM,       REG8,        { OPCODE(001010),             ImplD(0), ImplW(0), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(SUB,   MEM,       REG16,       { OPCODE(001010),             ImplD(0), ImplW(1), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(SUB,   REG8,      IMMEDIATE8,  { OPCODE(100000),   ImplS(0),           ImplW(0), MOD,         OPCODE(101),                             RM, DISP, IMM8,  END }) \
+    INST(SUB,   REG16,     IMMEDIATE16, { OPCODE(100000),   ImplS(0),           ImplW(1), MOD,         OPCODE(101),                             RM, DISP, IMM16, END }) \
+    INST(SUB,   REG16,     IMMEDIATE8,  { OPCODE(100000),   ImplS(1),           ImplW(1), MOD,         OPCODE(101),                             RM, DISP, IMM8,  END }) \
+    INST(SBB,   REG8,      REG8,        { OPCODE(000110),             ImplD(0), ImplW(0), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(SBB,   REG16,     REG16,       { OPCODE(000110),             ImplD(0), ImplW(1), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(SBB,   ACC8,      IMMEDIATE8,  { OPCODE(0001110),                      ImplW(0),                                                                 IMM8,  END }) \
+    INST(SBB,   ACC16,     IMMEDIATE16, { OPCODE(0001110),                      ImplW(1),                                                                 IMM16, END }) \
+    INST(SBB,   REG8,      MEM,         { OPCODE(000110),             ImplD(1), ImplW(0), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(SBB,   REG16,     MEM,         { OPCODE(000110),             ImplD(1), ImplW(1), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(SBB,   MEM,       REG8,        { OPCODE(000110),             ImplD(0), ImplW(0), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(SBB,   MEM,       REG16,       { OPCODE(000110),             ImplD(0), ImplW(1), MOD,                            REG,                  RM, DISP,        END }) \
+    INST(SBB,   REG8,      IMMEDIATE8,  { OPCODE(100000),   ImplS(0),           ImplW(0), MOD,         OPCODE(011),                             RM, DISP, IMM8,  END }) \
+    INST(SBB,   REG16,     IMMEDIATE16, { OPCODE(100000),   ImplS(0),           ImplW(1), MOD,         OPCODE(011),                             RM, DISP, IMM16, END }) \
+    INST(SBB,   REG16,     IMMEDIATE8,  { OPCODE(100000),   ImplS(1),           ImplW(1), MOD,         OPCODE(011),                             RM, DISP, IMM8,  END }) \
+    INST(DEC,   REG8,      NONE,        { OPCODE(1111111),                      ImplW(0), MOD,         OPCODE(001),                             RM,              END }) \
+    INST(DEC,   MEM,       NONE,        { OPCODE(1111111),                      W,        MOD,         OPCODE(001),                             RM, DISP,        END }) \
+    INST(DEC,   REG16,     NONE,        { OPCODE(01001),                                                                  REG,                                   END }) \
+    INST(NEG,   REG8,      NONE,        { OPCODE(1111011),                      ImplW(0), MOD,         OPCODE(011),                             RM,              END }) \
+    INST(NEG,   REG16,     NONE,        { OPCODE(1111011),                      ImplW(1), MOD,         OPCODE(011),                             RM,              END }) \
+    INST(NEG,   MEM,       NONE,        { OPCODE(1111011),                      W,        MOD,         OPCODE(011),                             RM, DISP,        END })
 
 #endif // TABLES_H
