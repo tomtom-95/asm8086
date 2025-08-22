@@ -392,6 +392,8 @@ parse_eaddr__(TokenList *token_list, u64 *idx, EffectiveAddress *eaddr)
         parse_eaddr_(token_list, idx, eaddr) &&
         parse_terminal(token_list, idx, TOK_RSQUARE_BR))
     {
+        eaddr->mod = eaddr_encode_mod(*eaddr);
+        eaddr->rm  = eaddr_encode_rm(eaddr->register_base, eaddr->register_index);
         return true;
     }
 
@@ -498,7 +500,7 @@ parse_signed_num(TokenList *token_list, u64 *idx, s16 *signed_num)
     if (parse_opr_math(token_list, idx, &opr_math) &&
         parse_terminal(token_list, idx, TOK_NUM))
     {
-        s16 num = (s16)token_list->token[*(idx-1)].num;
+        s16 num = (s16)token_list->token[(*idx) - 1].num;
 
         if (opr_math == TOK_PLUS)
         {
@@ -508,6 +510,8 @@ parse_signed_num(TokenList *token_list, u64 *idx, s16 *signed_num)
         {
             *signed_num = -num;
         }
+
+        return true;
     }
 
     *idx = cursor;
@@ -525,7 +529,7 @@ parse_direct_address(TokenList *token_list, u64 *idx, s16 *direct_addr)
 
     if (parse_terminal(token_list, idx, TOK_NUM))
     {
-        s16 num = (s16)token_list->token[*(idx-1)].num;
+        s16 num = (s16)token_list->token[(*idx) - 1].num;
 
         if (opr_math == TOK_NULL || opr_math == TOK_PLUS)
         {
@@ -536,6 +540,8 @@ parse_direct_address(TokenList *token_list, u64 *idx, s16 *direct_addr)
             assert(opr_math == TOK_MINUS);
             *direct_addr = num;
         }
+
+        return true;
     }
 
     *idx = cursor;
@@ -584,7 +590,6 @@ parse_imm(TokenList *token_list, u64 *idx, s16 *imm)
             assert(opr_math == TOK_MINUS);
             *imm = -num;
         }
-
         return true;
     }
 

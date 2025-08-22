@@ -21,10 +21,6 @@ codegen(void)
     for (u64 i = 0; i < ArrayCount(inst_table_keys); ++i)
     {
         bool mnemonic_found    = (inst_table_keys[i].mnemonic == instruction_data.mnemonic);
-        if (mnemonic_found)
-        {
-            printf("Mnemonic found");
-        }
 
         bool operand_dst_found = false;
         if (instruction_data.dst.operand.operand_kind == OP_NONE)
@@ -34,11 +30,6 @@ codegen(void)
         else
         {
             operand_dst_found = (inst_table_keys[i].dst & instruction_data.dst.operand.operand_kind);
-        }
-
-        if (mnemonic_found)
-        {
-            printf("Mnemonic found\n");
         }
 
         bool operand_src_found = false;
