@@ -80,6 +80,12 @@ dummytest() {
     echo "   ✔️  Saved to dummy_test"
 }
 
+testparser() {
+    echo "==> Compiling test_parser"
+    "$CC" "${CFLAGS[@]}" $INCLUDE -g -o "$OUT_DIR/test_parser" "./tests/test_parser.c"
+    echo "   ✔️  Saved to test_parser"
+}
+
 teststring() {
     echo "==> Compiling tests_tring"
     "$CC" "${CFLAGS[@]}" $INCLUDE -g -o "$OUT_DIR/test_string" "./tests/test_string.c"
@@ -101,6 +107,7 @@ case "${1:-build}" in
   test)        test       ;;
   buildpp)     buildpp    ;;
   dummytest)   dummytest  ;;
+  testparser)  testparser ;;
   test_string) teststring ;;
   clean)       clean      ;;
   *)

@@ -74,8 +74,8 @@ struct Operand_ {
 typedef struct InstructionData InstructionData;
 struct InstructionData {
     TokenKind mnemonic;
-    Operand_   dst;
-    Operand_   src; 
+    Operand_  dst;
+    Operand_  src; 
 };
 
 /* Look up table for getting encoding of REG field starting from TokenKind (table 4.9 of Intel manual) */
@@ -110,41 +110,43 @@ PrefixSegOvr seg_ovr_lut[TOK_COUNT] = {
 
 
 /* Encoding of table 4.10 in Intel manual */
-internal u64              eaddr_encode_rm(TokenKind base, TokenKind index); 
-internal u64              eaddr_encode_mod(EffectiveAddress eaddr);
+internal u64  eaddr_encode_rm(TokenKind base, TokenKind index); 
+internal u64  eaddr_encode_mod(EffectiveAddress eaddr);
 
-internal s32              is_base(TokenKind r);
-internal s32              is_index(TokenKind r);
+internal s32  is_base(TokenKind r);
+internal s32  is_index(TokenKind r);
 
-internal void             parse(TokenList *token_list, u64 *idx);
-internal void             parse_line_(TokenList *token_list, u64 *idx);
-internal void             parse_line(TokenList *token_list, u64 *idx);
-internal void             parse_label(TokenList *token_list, u64 *idx);
-internal void             parse_instruction(TokenList *token_list, u64 *idx);
-internal void             parse_instruction_tail(TokenList *token_list, u64 *idx);
-internal TokenKind        parse_mnemonic_(TokenList *token_list, u64 *idx);
-internal Operand_         parse_operand_(TokenList *token_list, u64 *idx);
-internal PrefixOperand    parse_opr_prefix(TokenList *token_list, u64 *idx);
-internal void             parse_prefix(TokenList *token_list, u64 *idx);
-internal TokenKind        parse_mnemonic(TokenList *token_list, u64 *idx);
-internal Operand          parse_operand(TokenList *token_list, u64 *idx);
-internal TokenKind        parse_register_general(TokenList *token_list, u64 *idx);
-internal s16              parse_direct_address(TokenList *token_list, u64 *idx);
+internal bool parse(TokenList *token_list, u64 *idx);
+internal bool parse_line_(TokenList *token_list, u64 *idx);
+internal bool parse_line(TokenList *token_list, u64 *idx);
+internal bool parse_label(TokenList *token_list, u64 *idx);
+internal bool parse_instruction(TokenList *token_list, u64 *idx, InstructionData *instruction);
+internal bool parse_instruction_tail(TokenList *token_list, u64 *idx, InstructionData *instruction);
+internal bool parse_mnemonic_(TokenList *token_list, u64 *idx, TokenKind *mnemonic);
+internal bool parse_operand_(TokenList *token_list, u64 *idx, Operand_ *operand_);
+internal bool parse_opr_prefix(TokenList *token_list, u64 *idx, PrefixOperand *prefix_operand);
+internal bool parse_prefix(TokenList *token_list, u64 *idx);
+internal bool parse_mnemonic(TokenList *token_list, u64 *idx, TokenKind *mnemonic);
+internal bool parse_operand(TokenList *token_list, u64 *idx, Operand *operand);
+internal bool parse_register_general(TokenList *token_list, u64 *idx, TokenKind *reg_gen);
 
-internal EffectiveAddress parse_eaddr__(TokenList *token_list, u64 *idx);
-internal EffectiveAddress parse_eaddr_(TokenList *token_list, u64 *idx);
-internal EffectiveAddress parse_eaddr(TokenList *token_list, u64 *idx);
+internal bool parse_eaddr__(TokenList *token_list, u64 *idx, EffectiveAddress *eaddr);
+internal bool parse_eaddr_(TokenList *token_list, u64 *idx, EffectiveAddress *eaddr);
+internal bool parse_eaddr(TokenList *token_list, u64 *idx, EffectiveAddress *eaddr);
+internal bool parse_register_base(TokenList *token_list, u64 *idx, TokenKind *reg_base);
+internal bool parse_register_index(TokenList *token_list, u64 *idx, TokenKind *reg_idx);
+internal bool parse_signed_num(TokenList *token_list, u64 *idx, s16 *signed_num);
+internal bool parse_direct_address(TokenList *token_list, u64 *idx, s16 *direct_address);
 
-internal TokenKind        parse_register_segment(TokenList *token_list, u64 *idx);
-internal TokenKind        parse_register_base(TokenList *token_list, u64 *idx);
-internal TokenKind        parse_register_index(TokenList *token_list, u64 *idx);
-internal s16              parse_imm(TokenList *token_list, u64 *idx);
-internal TokenKind        parse_opr_math(TokenList *token_list, u64 *idx);
-internal PrefixSize       parse_opr_size(TokenList *token_list, u64 *idx);
-internal PrefixSegOvr     parse_seg_ovr(TokenList *token_list, u64 *idx);
-internal Token            parse_terminal(TokenList *token_list, TokenKind token_kind, u64 *idx);
+internal bool parse_register_segment(TokenList *token_list, u64 *idx, TokenKind *reg_seg);
+internal bool parse_imm(TokenList *token_list, u64 *idx, s16 *imm);
+internal bool parse_opr_math(TokenList *token_list, u64 *idx, TokenKind *opr_math);
+internal bool parse_opr_size(TokenList *token_list, u64 *idx, PrefixSize *prefix_size);
+internal bool parse_seg_ovr(TokenList *token_list, u64 *idx, PrefixSegOvr *prefix_seg_ovr);
 
-internal s16              parse_signed_num(TokenList *token_list, u64 *idx);
+
+internal bool parse_terminal(TokenList *token_list, u64 *idx, TokenKind token_kind);
+
 
 InstructionData instruction_data = {0};
 

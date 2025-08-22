@@ -67,95 +67,79 @@ eaddr_encode_mod(EffectiveAddress eaddr)
     }
 }
 
-internal void
+internal bool
 parse(TokenList *token_list, u64 *idx)
 {
-    parse_line_(token_list, idx);
-    if (*idx)
+    if (parse_line_(token_list, idx))
     {
         printf("Line parsed\n");
-        // Parsing of the line was successfull
-        // I can emit machine code if the instruction does not involve a label
-
-        return;
+        return true;
     }
     else
     {
         printf("Failed to parse line\n");
-        return;
+        return false;
     }
 }
 
-internal void
+internal bool
 parse_line_(TokenList *token_list, u64 *idx)
 {
-    u64 p = *idx;
-
-    while (parse_terminal(token_list, TOK_EOL, &p).token_kind == TOK_EOL)
+    while (parse_terminal(token_list, idx, TOK_EOL))
     {
-        printf("Skipping empty line");
-        *idx = p;
+        printf("Skipping empty line\n");
     }
 
-    p = *idx;
+    u64 cursor = *idx;
 
-    parse_line(token_list, &p);
-    parse_terminal(token_list, TOK_EOL, &p);
-
-    if (p)
+    instruction_data = (InstructionData){0};
+    if (parse_line(token_list, idx) && parse_terminal(token_list, idx, TOK_EOL))
     {
-        *idx = p;
-        return;
+        printf("Parsing line_ succeded\n");
+        return true;
     }
 
+    *idx = cursor;
     printf("Failed to parse line_\n");
-    *idx = 0;
+
+    return false;
 }
 
-internal void
+internal bool
 parse_line(TokenList *token_list, u64 *idx)
 {
-    u64 p = *idx;
+    u64 cursor = *idx;
 
-    // This must go somewhere in instruction data
-    parse_terminal(token_list, TOK_BITS, &p);
-    parse_terminal(token_list, TOK_NUM, &p);
-
-    if (p)
+    if (parse_terminal(token_list, idx, TOK_BITS) && parse_terminal(token_list, idx, TOK_NUM))
     {
-        *idx = p;
-        return;
+        return true;
     }
 
-    p = *idx;
+    *idx = cursor;
 
-    parse_label(token_list, &p);
-
-    if (p)
+    if (parse_label(token_list, idx))
     {
-        *idx = p;
-        return;
+        return true;
     }
 
-    p = *idx;
-
-    parse_instruction(token_list, &p);
-
-    if (p)
+    InstructionData instruction = {0};
+    if (parse_instruction(token_list, idx, &instruction))
     {
-        *idx = p;
-        return;
+        instruction_data = instruction;
+        return true;
     }
 
-    *idx = 0;
+    printf("Failed to parse line\n");
+
+    return false;
 }
 
-internal void
+internal bool
 parse_label(TokenList *token_list, u64 *idx)
 {
     // TODO: implement this, for now it returns as if it failed
-    *idx = 0;
-    return;
+    u64 cursor = *idx;
+    return false;
 
     u64 p = *idx;
 
@@ -176,480 +160,391 @@ parse_label(TokenList *token_list, u64 *idx)
                 label is the jmp instruction could be encoded in 
             */
             *idx = p + 1;
-            return;
+            return false;
         }
         else
         {
-            return;
+            return false;
         }
     }
     else
     {
-        return;
+        return false;
     }
 }
 
-internal void
-parse_instruction(TokenList *token_list, u64 *idx)
+internal bool
+parse_instruction(TokenList *token_list, u64 *idx, InstructionData *instruction)
 {
-    instruction_data = (InstructionData){0};
-
-    u64 p = *idx;
-
-    instruction_data.mnemonic = parse_mnemonic_(token_list, &p);
-
-    *idx = p;
-
-    parse_instruction_tail(token_list, &p);
-
-    if (p)
+    TokenKind mnemonic = TOK_NULL;
+    if (parse_mnemonic_(token_list, idx, &mnemonic))
     {
-        *idx = p;
+        instruction->mnemonic = mnemonic;
+        parse_instruction_tail(token_list, idx, instruction);
+        return true;
     }
+
+    return false;
 }
 
-internal void
-parse_instruction_tail(TokenList *token_list, u64 *idx)
+internal bool
+parse_instruction_tail(TokenList *token_list, u64 *idx, InstructionData *instruction)
 {
+    u64 cursor = *idx;
+
     Operand_ operand_src = {0};
     Operand_ operand_dst = {0};
 
-    u64 p = *idx;
-
-    operand_dst = parse_operand_(token_list, &p);
-    parse_terminal(token_list, TOK_COMMA, &p);
-    operand_src = parse_operand_(token_list, &p);
-
-    if (p)
+    if (parse_operand_(token_list, idx, &operand_dst) &&
+        parse_terminal(token_list, idx, TOK_COMMA)    &&
+        parse_operand_(token_list, idx, &operand_src))
     {
-        instruction_data.src = operand_src;
-        instruction_data.dst = operand_dst;
-        *idx = p;
-        return;
+        instruction->dst = operand_dst;
+        instruction->src = operand_src;
+        return true;
     }
 
-    p = *idx;
+    *idx = cursor;
 
-    operand_dst = parse_operand_(token_list,  &p);
-
-    if (p)
+    if (parse_operand_(token_list,  idx, &operand_dst))
     {
-        instruction_data.dst = operand_dst;
-        *idx = p;
-        return;
+        instruction->dst = operand_dst;
+        return true;
     }
 
-    p = *idx;
-
-    parse_terminal(token_list, TOK_LABEL, &p);
-
-    if (p)
+    if (parse_terminal(token_list, idx, TOK_LABEL))
     {
-        *idx = p;
-        return;
+        return true;
     }
 
-    *idx = 0;
+    return false;
 }
 
-internal TokenKind
-parse_mnemonic_(TokenList *token_list, u64 *idx)
+internal bool
+parse_mnemonic_(TokenList *token_list, u64 *idx, TokenKind *mnemonic)
 {
-    u64 p = *idx;
+    u64 cursor = *idx;
 
-    while (p)
+    while (parse_prefix(token_list, idx));
+
+    if (parse_mnemonic(token_list, idx, mnemonic))
     {
-        *idx = p;
-        // TODO: must a struct to hold the list of prefixes
-        parse_prefix(token_list, &p);
+        return true;
     }
 
-    p = *idx;
-    TokenKind mnemonic = parse_mnemonic(token_list, &p);
+    *idx = cursor;
 
-    if (p != 0)
-    {
-        *idx = p;
-        return mnemonic;
-    }
-
-    *idx = 0;
-    return TOK_NULL;
+    return false;
 }
 
-internal Operand_
-parse_operand_(TokenList *token_list, u64 *idx)
+internal bool
+parse_operand_(TokenList *token_list, u64 *idx, Operand_ *operand_)
 {
-    Operand_ res = {0};
+    u64 cursor = *idx;
 
-    u64 p = *idx;
-
-    while (p)
-    {
-        *idx = p;
-        PrefixOperand prefix_operand = parse_opr_prefix(token_list, &p);
-        res.prefix_operand.prefix_seg_ovr |= prefix_operand.prefix_seg_ovr;
-        res.prefix_operand.prefix_size |= prefix_operand.prefix_size;
-    }
-
-    p = *idx;
-
-    Operand operand = parse_operand(token_list, &p);
-    res.operand = operand;
-
-    if (p != 0)
-    {
-        *idx = p;
-        return res;
-    }
-
-    *idx = 0;
-    return (Operand_){0};
-}
-
-internal PrefixOperand
-parse_opr_prefix(TokenList *token_list, u64 *idx)
-{
-    u64 p = *idx;
     PrefixOperand prefix_operand = {0};
+    while (parse_opr_prefix(token_list, idx, &prefix_operand));
+    operand_->prefix_operand = prefix_operand;
 
-    PrefixSize opr_size = parse_opr_size(token_list, &p);
-
-    if (p)
+    Operand operand = {0};
+    if (parse_operand(token_list, idx, &operand))
     {
-        *idx = p;
-        prefix_operand.prefix_size = opr_size;
-        return prefix_operand;
+        operand_->operand = operand;
+        return true;
     }
 
-    p = *idx;
+    *idx = cursor;
 
-    PrefixSegOvr prefix_seg_ovr = parse_seg_ovr(token_list, &p);
-
-    if (p)
-    {
-        *idx = p;
-        prefix_operand.prefix_seg_ovr = prefix_seg_ovr;
-        return prefix_operand;
-    }
-
-    *idx = 0;
-    return prefix_operand;
+    return false;
 }
 
-internal void
+internal bool
+parse_opr_prefix(TokenList *token_list, u64 *idx, PrefixOperand *prefix_operand)
+{
+    u64 cursor = *idx;
+
+    PrefixSize prefix_size = PREFIX_SIZE_NONE;
+    if (parse_opr_size(token_list, idx, &prefix_size))
+    {
+        prefix_operand->prefix_size |= prefix_size;
+        return true;
+    }
+
+    PrefixSegOvr prefix_seg_ovr = PREFIX_SEGOVR_NONE;
+    if (parse_seg_ovr(token_list, idx, &prefix_seg_ovr))
+    {
+        prefix_operand->prefix_seg_ovr |= prefix_seg_ovr;
+        return true;
+    }
+
+    return false;
+}
+
+internal bool
 parse_prefix(TokenList *token_list, u64 *idx)
 {
     // TODO
     printf("parse_prefix to be implemented\n");
-
-    *idx = 0;
-
-    return;
+    return false;
 }
 
-internal TokenKind
-parse_mnemonic(TokenList *token_list, u64 *idx)
+internal bool
+parse_mnemonic(TokenList *token_list, u64 *idx, TokenKind *mnemonic)
 {
     TokenKind token_kind = token_list->token[*idx].token_kind;
 
     // TODO: every time a new mnemonic is add this range must be changed (ugly)
     if (TOK_MOV <= token_kind && token_kind <= TOK_INC)
     {
+        *mnemonic = token_kind;
         ++(*idx);
-        return token_kind;
+        return true;
     }
 
-    *idx = 0;
-    return TOK_NULL;
+    *mnemonic = TOK_NULL;
+    return false;
 }
 
-internal Operand
-parse_operand(TokenList *token_list, u64 *idx)
+internal bool
+parse_operand(TokenList *token_list, u64 *idx, Operand *operand)
 {
-    u64 p = *idx;
+    u64 cursor = *idx;
 
-    Operand operand = {0};
-
-    TokenKind register_general = parse_register_general(token_list, &p);
-    if (p)
+    TokenKind register_general = TOK_NULL;
+    if (parse_register_general(token_list, idx, &register_general))
     {
-        operand.operand_kind = op_kind_from_reg_lut[register_general];
-        operand.register_general = register_general;
+        operand->register_general = register_general;
+        operand->operand_kind = op_kind_from_reg_lut[register_general];
 
-        *idx = p;
-
-        return operand;
+        return true;
     }
 
-    p = *idx;
-
-    EffectiveAddress eaddr = parse_eaddr__(token_list, &p);
-    if (p)
+    EffectiveAddress eaddr = {0};
+    if (parse_eaddr__(token_list, idx, &eaddr))
     {
+        operand->effective_address = eaddr;
+
         if (eaddr.register_base || eaddr.register_index)
         {
-            operand.operand_kind = OP_MEM;
+            operand->operand_kind = OP_MEM;
         }
         else
         {
-            operand.operand_kind = OP_MEM | OP_DADDR;
+            operand->operand_kind = OP_MEM | OP_DADDR;
         }
-        operand.effective_address = eaddr;
 
-        *idx = p;
-
-        return operand;
-    }
-    
-    p = *idx;
-
-    TokenKind register_segment = parse_register_segment(token_list, &p);
-    if (p)
-    {
-        operand.operand_kind = OP_SEGREG;
-        operand.register_segment = register_segment;
-        *idx = p;
-
-        return operand;
+        return true;
     }
 
-    p = *idx;
-
-    s16 immediate = parse_imm(token_list, &p);
-    if (p)
+    TokenKind register_segment = TOK_NULL;
+    if (parse_register_segment(token_list, idx, &register_segment))
     {
-        if (-128 <= immediate && immediate < 128)
+        operand->register_segment = register_segment;
+        operand->operand_kind = OP_SEGREG;
+
+        return true;
+    }
+
+    s16 imm = 0;
+    if (parse_imm(token_list, idx, &imm))
+    {
+        operand->immediate = imm;
+        if (-128 <= imm && imm < 128)
         {
-            operand.operand_kind = (OP_IMMEDIATE | OP_IMMEDIATE8);
+            operand->operand_kind = (OP_IMMEDIATE | OP_IMMEDIATE8);
         }
         else
         {
-            operand.operand_kind = (OP_IMMEDIATE | OP_IMMEDIATE16);
+            operand->operand_kind = (OP_IMMEDIATE | OP_IMMEDIATE16);
         }
 
-        operand.immediate = immediate;
-        *idx = p;
-
-        return operand;
+        return true;
     }
 
-    operand = (Operand){0};
-    *idx = 0;
-
-    return operand;
+    return false;
 }
 
-internal TokenKind
-parse_register_general(TokenList *token_list, u64 *idx)
+internal bool
+parse_register_general(TokenList *token_list, u64 *idx, TokenKind *reg_gen)
 {
     TokenKind token_kind = token_list->token[*idx].token_kind;
 
     // NOTE: the assumption here is that TABLE_REGISTER_GENERAL will not be modified. OK but it is a bit mhe ...
     if (TOK_AL <= token_kind && token_kind <= TOK_DI) 
     {
+        *reg_gen = token_kind;
         ++(*idx);
+
+        return true;
     }
     else
     {
-        *idx = 0;
+        return false;
     }
-
-    return token_kind;
 }
 
-internal EffectiveAddress
-parse_eaddr__(TokenList *token_list, u64 *idx)
+internal bool
+parse_eaddr__(TokenList *token_list, u64 *idx, EffectiveAddress *eaddr)
 {
-    u64 p = *idx;
+    u64 cursor = *idx;
 
-    parse_terminal(token_list, TOK_LSQUARE_BR, &p);
-    EffectiveAddress effective_address = parse_eaddr_(token_list, &p);
-    parse_terminal(token_list, TOK_RSQUARE_BR, &p);
-
-    if (p)
+    if (parse_terminal(token_list, idx, TOK_LSQUARE_BR) &&
+        parse_eaddr_(token_list, idx, eaddr) &&
+        parse_terminal(token_list, idx, TOK_RSQUARE_BR))
     {
-        *idx = p;
-        return effective_address;
+        return true;
     }
 
-    effective_address = (EffectiveAddress){0};
-    *idx = 0;
+    *idx = cursor;
 
-    return effective_address;
+    return false;
 }
 
-internal EffectiveAddress
-parse_eaddr_(TokenList *token_list, u64 *idx)
+internal bool
+parse_eaddr_(TokenList *token_list, u64 *idx, EffectiveAddress *eaddr)
 {
-    u64 p = *idx;
+    u64 cursor = *idx;
 
-    parse_terminal(token_list, TOK_PLUS, &p);
+    parse_terminal(token_list, idx, TOK_PLUS);
 
-    if (p)
+    if (parse_eaddr(token_list, idx, eaddr))
     {
-        *idx = p;
+        return true;
     }
 
-    p = *idx;
+    *idx = cursor;
 
-    EffectiveAddress eaddr = parse_eaddr(token_list, &p);
-
-    eaddr.rm  = eaddr_encode_rm(eaddr.register_base, eaddr.register_index);
-    eaddr.mod = eaddr_encode_mod(eaddr);
-
-    if (p)
-    {
-        *idx = p;
-        return eaddr;
-    }
-
-    eaddr = (EffectiveAddress){0};
-    *idx  = 0;
-
-    return eaddr;
+    return false;
 }
 
-internal EffectiveAddress
-parse_eaddr(TokenList *token_list, u64 *idx)
+internal bool
+parse_eaddr(TokenList *token_list, u64 *idx, EffectiveAddress *eaddr)
 {
-    EffectiveAddress eaddr = {0};
-    u64 p = *idx;
+    u64 cursor = *idx;
 
-    eaddr.register_base = parse_register_base(token_list, &p);
-    parse_terminal(token_list, TOK_PLUS, &p);
-    eaddr.register_index = parse_register_index(token_list, &p);
-
-    if (p)
+    if (parse_register_base(token_list, idx, &eaddr->register_base) &&
+        parse_terminal(token_list, idx, TOK_PLUS) &&
+        parse_register_index(token_list, idx, &eaddr->register_index))
     {
-        *idx = p;
-
-        eaddr.displacement = parse_signed_num(token_list, &p);
-
-        if (p)
-        {
-            *idx = p;
-        }
-
-        return eaddr;
+        parse_signed_num(token_list, idx, &eaddr->displacement);
+        return true;
     }
 
-    eaddr = (EffectiveAddress){0};
-    p = *idx;
+    *idx = cursor;
 
-    eaddr.register_base = parse_register_base(token_list, &p);
-
-    if (p)
+    if (parse_register_base(token_list, idx, &eaddr->register_base))
     {
-        *idx = p;
-
-        eaddr.displacement = parse_signed_num(token_list, &p);
-
-        if (p)
-        {
-            *idx = p;
-        }
-
-        return eaddr;
+        parse_signed_num(token_list, idx, &eaddr->displacement);
+        return true;
     }
 
-    eaddr = (EffectiveAddress){0};
-    p = *idx;
+    *idx = cursor;
 
-    eaddr.register_index = parse_register_index(token_list, &p);
-
-    if (p)
+    if (parse_register_index(token_list, idx, &eaddr->register_index))
     {
-        *idx = p;
-
-        eaddr.displacement = parse_signed_num(token_list, &p);
-
-        if (p)
-        {
-            *idx = p;
-        }
-
-        return eaddr;
+        parse_signed_num(token_list, idx, &eaddr->displacement);
+        return true;
     }
 
-    eaddr = (EffectiveAddress){0};
-    p = *idx;
-
-    eaddr.direct_address = parse_direct_address(token_list, &p);
-
-    if (p)
+    if (parse_direct_address(token_list, idx, &eaddr->direct_address))
     {
-        *idx = p;
-
-        return eaddr;
+        return true;
     }
 
-    eaddr = (EffectiveAddress){0};
-    *idx = 0;
+    *idx = cursor;
 
-    return eaddr;
+    return false;
 }
 
-TokenKind
-parse_register_base(TokenList *token_list, u64 *idx)
+internal bool
+parse_register_base(TokenList *token_list, u64 *idx, TokenKind *reg_base)
 {
     TokenKind token_kind = token_list->token[*idx].token_kind;
     if (token_kind == TOK_BX || token_kind == TOK_BP)
     {
         ++(*idx);
-        return token_kind;
+        *reg_base = token_kind;
+        return true;
     }
     else
     {
-        *idx = 0;
-        return TOK_NULL;
+        return false;
     }
 }
 
-TokenKind
-parse_register_index(TokenList *token_list, u64 *idx)
+internal bool
+parse_register_index(TokenList *token_list, u64 *idx, TokenKind *reg_idx)
 {
     TokenKind token_kind = token_list->token[*idx].token_kind;
     if (token_kind == TOK_SI || token_kind == TOK_DI)
     {
         ++(*idx);
-        return token_kind;
+        *reg_idx = token_kind;
+        return true;
     }
     else
     {
-        *idx = 0;
-        return TOK_NULL;
+        return false;
     }
 }
 
-s16
-parse_signed_num(TokenList *token_list, u64 *idx)
+internal bool
+parse_signed_num(TokenList *token_list, u64 *idx, s16 *signed_num)
 {
-    u64 p = *idx;
+    u64 cursor = *idx;
 
-    TokenKind opr_math = parse_opr_math(token_list, &p);
-    Token token = parse_terminal(token_list, TOK_NUM, &p);
+    TokenKind opr_math;
 
-    if (p)
+    if (parse_opr_math(token_list, idx, &opr_math) &&
+        parse_terminal(token_list, idx, TOK_NUM))
     {
-        *idx = p;
+        s16 num = (s16)token_list->token[*(idx-1)].num;
 
         if (opr_math == TOK_PLUS)
         {
-            return (s16)token.num;
+            *signed_num = num;
         }
         else
         {
-            return -((s16)token.num);
+            *signed_num = -num;
         }
     }
 
-    *idx = 0;
-    return 0;
+    *idx = cursor;
+
+    return false;
 }
 
-internal TokenKind
-parse_register_segment(TokenList *token_list, u64 *idx)
+internal bool
+parse_direct_address(TokenList *token_list, u64 *idx, s16 *direct_addr)
+{
+    u64 cursor = *idx;
+
+    TokenKind opr_math = TOK_NULL;
+    parse_opr_math(token_list, idx, &opr_math);
+
+    if (parse_terminal(token_list, idx, TOK_NUM))
+    {
+        s16 num = (s16)token_list->token[*(idx-1)].num;
+
+        if (opr_math == TOK_NULL || opr_math == TOK_PLUS)
+        {
+            *direct_addr = num;
+        }
+        else
+        {
+            assert(opr_math == TOK_MINUS);
+            *direct_addr = num;
+        }
+    }
+
+    *idx = cursor;
+
+    return false;
+}
+
+internal bool
+parse_register_segment(TokenList *token_list, u64 *idx, TokenKind *reg_seg)
 {
     TokenKind token_kind = token_list->token[*idx].token_kind;
 
@@ -657,148 +552,116 @@ parse_register_segment(TokenList *token_list, u64 *idx)
     if (TOK_ES <= token_kind && token_kind <= TOK_DS) 
     {
         ++(*idx);
-        return token_kind;
+        *reg_seg = token_kind;
+        return true;
     }
 
-    *idx = 0;
-
-    return token_kind;
+    return false;
 }
 
-internal s16
-parse_imm(TokenList *token_list, u64 *idx)
+internal bool
+parse_imm(TokenList *token_list, u64 *idx, s16 *imm)
 {
-    u64 p = *idx;
+    u64 cursor = *idx;
 
-    s16 num;
-
-    TokenKind operator_math = parse_opr_math(token_list, &p);
-    if (p)
+    TokenKind opr_math = TOK_NULL;
+    if (parse_opr_math(token_list, idx, &opr_math))
     {
-        *idx = p;
-    }
-
-    TokenKind token_kind = token_list->token[*idx].token_kind;
-    if (token_kind == TOK_NUM || token_kind == TOK_ZERO)
-    {
-        // TODO: I should check that the number I am parsing (with sign included)
-        //       can actually fit in 16 bit 2's complement
-        num = (s16)token_list->token[*idx].num;
-
-        ++(*idx);
-        if (operator_math == TOK_NULL || operator_math == TOK_PLUS)
+        TokenKind token_kind = token_list->token[*idx].token_kind;
+        if (token_kind == TOK_NUM || token_kind == TOK_ZERO)
         {
-            return num;
-        }
-        else
-        {
-            assert(operator_math == TOK_MINUS);
-            return -num;
+            // TODO: I should check that the number I am parsing (with sign included)
+            //       can actually fit in 16 bit 2's complement
+            s16 num = (s16)token_list->token[(*idx)++].num;
+
+            if (opr_math == TOK_NULL || opr_math == TOK_PLUS)
+            {
+                *imm = num;
+            }
+            else
+            {
+                assert(opr_math == TOK_MINUS);
+                *imm = -num;
+            }
+
+            return true;
         }
     }
 
-    *idx = 0;
+    *idx = cursor;
 
-    return 0;
+    return false;
 }
 
-internal TokenKind
-parse_opr_math(TokenList *token_list, u64 *idx)
+internal bool
+parse_opr_math(TokenList *token_list, u64 *idx, TokenKind *opr_math)
 {
     TokenKind token_kind = token_list->token[*idx].token_kind;
     if (token_kind == TOK_PLUS || token_kind == TOK_MINUS)
     {
         ++(*idx);
-        return token_kind;
+        *opr_math = token_kind;
+        return true;
     }
-
-    *idx = 0;
-    return TOK_NULL;
+    else
+    {
+        return false;
+    }
 }
 
-internal PrefixSize
-parse_opr_size(TokenList *token_list, u64 *idx)
+internal bool
+parse_opr_size(TokenList *token_list, u64 *idx, PrefixSize *prefix_size)
 {
     TokenKind token_kind = token_list->token[*idx].token_kind;
 
     if (token_kind == TOK_BYTE)
     {
         ++(*idx);
-        return PREFIX_SIZE_BYTE;
+        *prefix_size = PREFIX_SIZE_BYTE;
+        return true;
     }
     else if (token_kind == TOK_WORD)
     {
         ++(*idx);
-        return PREFIX_SIZE_WORD;
-    }
-
-    *idx = 0;
-    return PREFIX_SIZE_NONE;
-}
-
-internal PrefixSegOvr
-parse_seg_ovr(TokenList *token_list, u64 *idx)
-{
-    u64 p = *idx;
-
-    TokenKind register_segment = parse_register_segment(token_list, &p);
-    parse_terminal(token_list, TOK_COLON, &p);
-
-    if (p)
-    {
-        *idx = p;
-        return seg_ovr_lut[register_segment];
-    }
-
-    *idx = 0;
-    return PREFIX_SEGOVR_NONE;
-}
-
-s16
-parse_direct_address(TokenList *token_list, u64 *idx)
-{
-    u64 p = *idx;
-
-    TokenKind tok_opr_math = parse_opr_math(token_list, &p);
-
-    if (p)
-    {
-        *idx = p;
-    }
-
-    p = *idx;
-
-    Token tok_num = parse_terminal(token_list, TOK_NUM, &p);
-
-    if (p)
-    {
-        *idx = p;
-        if (tok_opr_math == TOK_NULL || tok_opr_math == TOK_PLUS)
-        {
-            return (s16)tok_num.num;
-        }
-        else
-        {
-            return -((s16)tok_num.num);
-        }
-    }
-
-    *idx = 0;
-    return 0;
-}
-
-Token
-parse_terminal(TokenList *token_list, TokenKind token_kind, u64 *idx)
-{
-    Token token = token_list->token[*idx];
-    if (token.token_kind == token_kind)
-    {
-        ++(*idx);
-        return token;
+        *prefix_size = PREFIX_SIZE_WORD;
+        return true;
     }
     else
     {
-        *idx = 0;
-        return (Token){0};
+        return false;
+    }
+}
+
+internal bool
+parse_seg_ovr(TokenList *token_list, u64 *idx, PrefixSegOvr *prefix_seg_ovr)
+{
+    u64 cursor = *idx;
+
+    TokenKind reg_seg;
+    if (parse_register_segment(token_list, idx, &reg_seg) &&
+        parse_terminal(token_list, idx, TOK_COLON))
+    {
+        *prefix_seg_ovr = seg_ovr_lut[reg_seg];
+        return true;
+    }
+    else
+    {
+        *idx = cursor;
+
+        return false;
+    }
+}
+
+bool
+parse_terminal(TokenList *token_list, u64 *idx, TokenKind token_kind)
+{
+    if (token_list->token[*idx].token_kind == token_kind)
+    {
+        ++(*idx);
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }

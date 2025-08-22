@@ -45,11 +45,11 @@ int main(void)
     while (idx < token_list.cnt)
     {
         instruction_data = (InstructionData){0}; 
-        parse(&token_list, &idx);
-        if (!idx)
+        if (!parse(&token_list, &idx))
         {
             return 1;
         }
+
         InstEncoding enc = codegen();
 
         u64 num_bytes = enc.bitlen / 8;
