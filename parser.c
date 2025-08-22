@@ -565,27 +565,27 @@ parse_imm(TokenList *token_list, u64 *idx, s16 *imm)
     u64 cursor = *idx;
 
     TokenKind opr_math = TOK_NULL;
-    if (parse_opr_math(token_list, idx, &opr_math))
+
+    parse_opr_math(token_list, idx, &opr_math);
+
+    TokenKind token_kind = token_list->token[*idx].token_kind;
+    if (token_kind == TOK_NUM || token_kind == TOK_ZERO)
     {
-        TokenKind token_kind = token_list->token[*idx].token_kind;
-        if (token_kind == TOK_NUM || token_kind == TOK_ZERO)
+        // TODO: I should check that the number I am parsing (with sign included)
+        //       can actually fit in 16 bit 2's complement
+        s16 num = (s16)token_list->token[(*idx)++].num;
+
+        if (opr_math == TOK_NULL || opr_math == TOK_PLUS)
         {
-            // TODO: I should check that the number I am parsing (with sign included)
-            //       can actually fit in 16 bit 2's complement
-            s16 num = (s16)token_list->token[(*idx)++].num;
-
-            if (opr_math == TOK_NULL || opr_math == TOK_PLUS)
-            {
-                *imm = num;
-            }
-            else
-            {
-                assert(opr_math == TOK_MINUS);
-                *imm = -num;
-            }
-
-            return true;
+            *imm = num;
         }
+        else
+        {
+            assert(opr_math == TOK_MINUS);
+            *imm = -num;
+        }
+
+        return true;
     }
 
     *idx = cursor;
