@@ -288,6 +288,25 @@ codegen(void)
                     enc.encoding |= w;
                     enc.bitlen += field.bitlen;
                 }
+                else if (field.id == INST_S)
+                {
+                    u8 s = 0;
+
+                    PrefixSize prefix_src = instruction_data.src.prefix_operand.prefix_size;
+                    PrefixSize prefix_dst = instruction_data.dst.prefix_operand.prefix_size;
+                    if ((prefix_src & PREFIX_SIZE_BYTE) || (prefix_dst & PREFIX_SIZE_BYTE))
+                    {
+                        s = 0;
+                    }
+                    else if ((prefix_src & PREFIX_SIZE_WORD) || (prefix_dst & PREFIX_SIZE_WORD))
+                    {
+                        s = 1;
+                    }
+
+                    enc.encoding <<= field.bitlen;
+                    enc.encoding |= s;
+                    enc.bitlen += field.bitlen;
+                }
             } // for (u64 j = 0; inst.inst_fields[j].id != INST_END; ++j)
 
             return enc;
