@@ -42,6 +42,7 @@ typedef enum OperandKind
     OP_IMMEDIATE16  = (1u << 8),
     OP_DADDR        = (1u << 9),
     OP_SEGREG       = (1u << 10),
+    OP_LABEL        = (1u << 11),
 }
 OperandKind;
 
@@ -63,6 +64,7 @@ struct Operand {
     TokenKind        register_segment;
     EffectiveAddress effective_address;
     s16              immediate;
+    String           label;
 };
 
 typedef struct Operand_ Operand_;
@@ -76,6 +78,27 @@ struct InstructionData {
     TokenKind mnemonic;
     Operand_  dst;
     Operand_  src; 
+};
+
+typedef struct Label Label;
+struct Label {
+    String name;
+    u64    pos;
+};
+
+typedef struct MapLabelEl MapLabelEl;
+struct MapLabelEl {
+    Label label;
+    u64   next; 
+};
+
+typedef struct MapLabel MapLabel;
+struct MapLabel {
+    u64        *index_array;
+    MapLabelEl *collision_array;
+    u64         offset;
+    u64         first_free;
+    u64         bucket_count;
 };
 
 /* Look up table for getting encoding of REG field starting from TokenKind (table 4.9 of Intel manual) */
@@ -119,7 +142,7 @@ internal s32  is_index(TokenKind r);
 internal bool parse(TokenList *token_list, u64 *idx);
 internal bool parse_line_(TokenList *token_list, u64 *idx);
 internal bool parse_line(TokenList *token_list, u64 *idx);
-internal bool parse_label(TokenList *token_list, u64 *idx);
+internal bool parse_label(TokenList *token_list, u64 *idx, Label *label);
 internal bool parse_instruction(TokenList *token_list, u64 *idx, InstructionData *instruction);
 internal bool parse_instruction_tail(TokenList *token_list, u64 *idx, InstructionData *instruction);
 internal bool parse_mnemonic_(TokenList *token_list, u64 *idx, TokenKind *mnemonic);
@@ -144,10 +167,17 @@ internal bool parse_opr_math(TokenList *token_list, u64 *idx, TokenKind *opr_mat
 internal bool parse_opr_size(TokenList *token_list, u64 *idx, PrefixSize *prefix_size);
 internal bool parse_seg_ovr(TokenList *token_list, u64 *idx, PrefixSegOvr *prefix_seg_ovr);
 
-
 internal bool parse_terminal(TokenList *token_list, u64 *idx, TokenKind token_kind);
 
+internal u64      hash_string(String str);
+internal MapLabel maplabel_init(Arena *arena, u64 bucket_count);
+internal u64      maplabel_find(MapLabel *maplabel, String labelname);
+internal void     maplabel_insert(MapLabel *maplabel, Label label);
+internal void     maplabel_pop(MapLabel *maplabel, String labelname);
 
+
+u64             g_instruction_pointer = 0;
 InstructionData instruction_data = {0};
+MapLabel        g_map_label;
 
 #endif // PARSER_H

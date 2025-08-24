@@ -36,6 +36,7 @@ operand
     | eaddr__
     | register_segment
     | imm
+    | LABEL
 
 imm
     : opr_math? (NUM | NUM_ZERO)

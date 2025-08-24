@@ -307,6 +307,23 @@ codegen(void)
                     enc.encoding |= s;
                     enc.bitlen += field.bitlen;
                 }
+                else if (field.id == INST_LBL)
+                {
+                    String labelname = instruction_data.dst.operand.label;
+
+                    u64 idx = maplabel_find(&g_map_label, labelname);
+                    assert(idx != 0);
+
+                    Label label = g_map_label.collision_array[idx].label;
+                    
+                    s16 diff = (s16)label.pos - (s16)(g_instruction_pointer + 3);
+
+                    enc.encoding <<= 8;
+                    enc.encoding |= (u8)(((u16)diff) & 0xff);
+                    enc.encoding <<= 8;
+                    enc.encoding |= (u8)((((u16)diff) >> 8) & 0xff);
+                    enc.bitlen += 16;
+                }
             } // for (u64 j = 0; inst.inst_fields[j].id != INST_END; ++j)
 
             return enc;

@@ -117,8 +117,10 @@ parse_line(TokenList *token_list, u64 *idx)
 
     *idx = cursor;
 
-    if (parse_label(token_list, idx))
+    Label label = {0};
+    if (parse_label(token_list, idx, &label))
     {
+        maplabel_insert(&g_map_label, label);
         return true;
     }
 
@@ -135,42 +137,20 @@ parse_line(TokenList *token_list, u64 *idx)
 }
 
 internal bool
-parse_label(TokenList *token_list, u64 *idx)
+parse_label(TokenList *token_list, u64 *idx, Label *label)
 {
-    // TODO: implement this, for now it returns as if it failed
     u64 cursor = *idx;
+
+    if (parse_terminal(token_list, idx, TOK_LABEL) && parse_terminal(token_list, idx, TOK_COLON))
+    {
+        label->name = token_list->token[*idx - 2].token_view;
+        label->pos  = g_instruction_pointer;
+        return true;
+    }
+
+    *idx = cursor;
+
     return false;
-
-    u64 p = *idx;
-
-    if (token_list->token[p].token_kind == TOK_LABEL)
-    {
-        ++p;
-        if (token_list->token[p].token_kind == TOK_COLON)
-        {
-            /*
-            TODO:
-                Take the label and store it in a map must 
-                store position in the obj file that will be created
-                I can do it if I know how many bytes each instruction
-                is while I am assembling the line
-                This must be the case: for each line I must be able to get
-                how many bytes it takes, the only case for this not to be the
-                case is the "jmp label" instruction kind. Based on how far the
-                label is the jmp instruction could be encoded in 
-            */
-            *idx = p + 1;
-            return false;
-        }
-        else
-        {
-            return false;
-        }
-    }
-    else
-    {
-        return false;
-    }
 }
 
 internal bool
@@ -294,7 +274,7 @@ parse_mnemonic(TokenList *token_list, u64 *idx, TokenKind *mnemonic)
     TokenKind token_kind = token_list->token[*idx].token_kind;
 
     // TODO: every time a new mnemonic is add this range must be changed (ugly)
-    if (TOK_MOV <= token_kind && token_kind <= TOK_RCR)
+    if (TOK_MOV <= token_kind && token_kind <= TOK_JMP)
     {
         *mnemonic = token_kind;
         ++(*idx);
@@ -357,6 +337,14 @@ parse_operand(TokenList *token_list, u64 *idx, Operand *operand)
         {
             operand->operand_kind = (OP_IMMEDIATE | OP_IMMEDIATE16);
         }
+
+        return true;
+    }
+
+    if (parse_terminal(token_list, idx, TOK_LABEL))
+    {
+        operand->label = token_list->token[*idx - 1].token_view;
+        operand->operand_kind = OP_LABEL;
 
         return true;
     }
@@ -657,7 +645,7 @@ parse_seg_ovr(TokenList *token_list, u64 *idx, PrefixSegOvr *prefix_seg_ovr)
     }
 }
 
-bool
+internal bool
 parse_terminal(TokenList *token_list, u64 *idx, TokenKind token_kind)
 {
     if (token_list->token[*idx].token_kind == token_kind)
@@ -668,5 +656,94 @@ parse_terminal(TokenList *token_list, u64 *idx, TokenKind token_kind)
     else
     {
         return false;
+    }
+}
+
+internal u64
+hash_string(String str)
+{
+    u64 hash = 5381;
+    for (u64 i = 0; i < str.len; ++i)
+    {
+        hash = ((hash << 5) + hash) + (u64)((str.str)[i]);
+    }
+    return hash;
+}
+
+internal MapLabel 
+maplabel_init(Arena *arena, u64 bucket_count)
+{
+    return (MapLabel){
+        .index_array = arena_push(arena, sizeof(Label) * bucket_count),
+        .collision_array = arena_push(arena, MegaByte(1)),
+        .offset = 0, .first_free = 0, .bucket_count = bucket_count
+    };
+}
+
+internal u64
+maplabel_find(MapLabel *maplabel, String labelname)
+{
+    u64 bucket = hash_string(labelname) % maplabel->bucket_count;
+
+    u64 idx = maplabel->index_array[bucket];
+    while (idx != 0) {
+        if (string_cmp(maplabel->collision_array[idx].label.name, labelname)) {
+            return idx;
+        }
+        else {
+            idx = maplabel->collision_array[idx].next;
+        }
+    }
+
+    return idx;
+}
+
+internal void
+maplabel_insert(MapLabel *maplabel, Label label)
+{
+    // make sure data is not already in the map
+    assert(maplabel_find(maplabel, label.name) == 0);
+
+    u64 bucket = hash_string(label.name) % maplabel->bucket_count;
+
+    u64 free_slot = maplabel->first_free;
+    if (free_slot)
+    {
+        maplabel->first_free = maplabel->collision_array[maplabel->first_free].next;
+    }
+    else
+    {
+        free_slot = ++maplabel->offset;
+    }
+
+    u64 idx = maplabel->index_array[bucket];
+
+    maplabel->index_array[bucket] = free_slot;
+    maplabel->collision_array[free_slot].label = label;
+    maplabel->collision_array[free_slot].next = idx;
+}
+
+internal void
+maplabel_pop(MapLabel *maplabel, String labelname)
+{
+    u64 bucket = hash_string(labelname) % maplabel->bucket_count;
+
+    u64 *idx_ptr = &maplabel->index_array[bucket];
+    while (*idx_ptr != 0)
+    {
+        u64 idx = *idx_ptr;
+        if (string_cmp(maplabel->collision_array[idx].label.name, labelname))
+        {
+            *idx_ptr = maplabel->collision_array[idx].next;
+
+            maplabel->collision_array[idx].next = maplabel->first_free;
+            maplabel->first_free = idx;
+
+            return;
+        }
+        else
+        {
+            idx_ptr = &maplabel->collision_array[idx].next;
+        }
     }
 }

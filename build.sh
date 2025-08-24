@@ -63,7 +63,7 @@ test() {
   build
   run
   echo "==> Assembling test file with NASM"
-  nasm "$TESTFILENAME" -o "$NASMFILENAME"
+  nasm -O0 "$TESTFILENAME" -o "$NASMFILENAME"
   echo "==> Diffing binaries"
   diff "$BINFILENAME" "$NASMFILENAME"
 }

@@ -31,7 +31,6 @@ int main(void)
 
     tokenize(&token_list, input);
 
-
     FILE *file_output = fopen("./resources/test_one_instruction.bin", "wb");
     if (!file_output)
     {
@@ -39,7 +38,12 @@ int main(void)
         return 1;
     }
 
-    Arena *output_arena = arena_alloc(MegaByte(1));
+    Arena *output_arena = arena_alloc(MegaByte(10));
+
+    g_map_label  = maplabel_init(output_arena, 1);
+
+    u64 encoding_start_pos = output_arena->pos;
+    u8 *encoding_start_ptr = (u8 *)output_arena + output_arena->base + output_arena->pos;
 
     u64 idx = 1;
     while (idx < token_list.cnt)
@@ -53,6 +57,7 @@ int main(void)
         InstEncoding enc = codegen();
 
         u64 num_bytes = enc.bitlen / 8;
+        g_instruction_pointer += num_bytes;
         u8 *p = arena_push(output_arena, num_bytes);
 
         for (u64 i = 0; i < num_bytes; ++i)
@@ -65,8 +70,7 @@ int main(void)
         printf("Encoding: 0x%" PRIx64 "\n", enc.encoding); 
     }
     
-    u8 *base = (u8*)output_arena + output_arena->base;
-    fwrite(base, output_arena->pos, 1, file_output);
+    fwrite(encoding_start_ptr, output_arena->pos - encoding_start_pos, 1, file_output);
 
     fclose(file_output);
 

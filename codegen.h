@@ -58,5 +58,4 @@ InstTableEntry inst_table[] = {
 
 
 InstEncoding codegen(void);
-
 u8           encode_sr(Operand operand);
