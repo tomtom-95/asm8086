@@ -38,6 +38,13 @@
     ENTRY(CWD,   cwd)   \
     ENTRY(NOT,   not)   \
     ENTRY(SHL,   shl)   \
+    ENTRY(SAL,   sal)   \
+    ENTRY(SHR,   shr)   \
+    ENTRY(SAR,   sar)   \
+    ENTRY(ROL,   rol)   \
+    ENTRY(ROR,   ror)   \
+    ENTRY(RCL,   rcl)   \
+    ENTRY(RCR,   rcr)   \
 
 // Chapter 4, Table 4.9: REG Field Encoding
 // NOTE: the same table applies in MOD=11 case when encoding R/M field (see table 4.10)
@@ -287,9 +294,50 @@
     INST(SHL,   REG16,       IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(1), ImplMod(11), OPCODE(100),                             RM,              END }) \
     INST(SHL,   REG8,        REG8,        { OPCODE(110100),                       ImplV(1), ImplW(0), ImplMod(11), OPCODE(100),                             RM,              END }) \
     INST(SHL,   REG16,       REG8,        { OPCODE(110100),                       ImplV(1), ImplW(1), ImplMod(11), OPCODE(100),                             RM,              END }) \
-    INST(SHL,   MEM,         IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), W,        MOD,         OPCODE(100),                             RM,              END }) \
-    INST(SHL,   MEM,         REG8,        { OPCODE(110100),                       ImplV(0), W,        MOD,         OPCODE(100),                             RM,              END }) \
-
+    INST(SHL,   MEM,         IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), W,        MOD,         OPCODE(100),                             RM, DISP,        END }) \
+    INST(SHL,   MEM,         REG8,        { OPCODE(110100),                       ImplV(1), W,        MOD,         OPCODE(100),                             RM, DISP,        END }) \
+    INST(SAL,   REG8,        IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(0), ImplMod(11), OPCODE(100),                             RM,              END }) \
+    INST(SAL,   REG16,       IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(1), ImplMod(11), OPCODE(100),                             RM,              END }) \
+    INST(SAL,   REG8,        REG8,        { OPCODE(110100),                       ImplV(1), ImplW(0), ImplMod(11), OPCODE(100),                             RM,              END }) \
+    INST(SAL,   REG16,       REG8,        { OPCODE(110100),                       ImplV(1), ImplW(1), ImplMod(11), OPCODE(100),                             RM,              END }) \
+    INST(SAL,   MEM,         IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), W,        MOD,         OPCODE(100),                             RM, DISP,        END }) \
+    INST(SAL,   MEM,         REG8,        { OPCODE(110100),                       ImplV(1), W,        MOD,         OPCODE(100),                             RM, DISP,        END }) \
+    INST(SHR,   REG8,        IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(0), ImplMod(11), OPCODE(101),                             RM,              END }) \
+    INST(SHR,   REG16,       IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(1), ImplMod(11), OPCODE(101),                             RM,              END }) \
+    INST(SHR,   REG8,        REG8,        { OPCODE(110100),                       ImplV(1), ImplW(0), ImplMod(11), OPCODE(101),                             RM,              END }) \
+    INST(SHR,   REG16,       REG8,        { OPCODE(110100),                       ImplV(1), ImplW(1), ImplMod(11), OPCODE(101),                             RM,              END }) \
+    INST(SHR,   MEM,         IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), W,        MOD,         OPCODE(101),                             RM, DISP,        END }) \
+    INST(SHR,   MEM,         REG8,        { OPCODE(110100),                       ImplV(1), W,        MOD,         OPCODE(101),                             RM, DISP,        END }) \
+    INST(SAR,   REG8,        IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(0), ImplMod(11), OPCODE(111),                             RM,              END }) \
+    INST(SAR,   REG16,       IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(1), ImplMod(11), OPCODE(111),                             RM,              END }) \
+    INST(SAR,   REG8,        REG8,        { OPCODE(110100),                       ImplV(1), ImplW(0), ImplMod(11), OPCODE(111),                             RM,              END }) \
+    INST(SAR,   REG16,       REG8,        { OPCODE(110100),                       ImplV(1), ImplW(1), ImplMod(11), OPCODE(111),                             RM,              END }) \
+    INST(SAR,   MEM,         IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), W,        MOD,         OPCODE(111),                             RM, DISP,        END }) \
+    INST(SAR,   MEM,         REG8,        { OPCODE(110100),                       ImplV(1), W,        MOD,         OPCODE(111),                             RM, DISP,        END }) \
+    INST(ROL,   REG8,        IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(0), ImplMod(11), OPCODE(000),                             RM,              END }) \
+    INST(ROL,   REG16,       IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(1), ImplMod(11), OPCODE(000),                             RM,              END }) \
+    INST(ROL,   REG8,        REG8,        { OPCODE(110100),                       ImplV(1), ImplW(0), ImplMod(11), OPCODE(000),                             RM,              END }) \
+    INST(ROL,   REG16,       REG8,        { OPCODE(110100),                       ImplV(1), ImplW(1), ImplMod(11), OPCODE(000),                             RM,              END }) \
+    INST(ROL,   MEM,         IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), W,        MOD,         OPCODE(000),                             RM, DISP,        END }) \
+    INST(ROL,   MEM,         REG8,        { OPCODE(110100),                       ImplV(1), W,        MOD,         OPCODE(000),                             RM, DISP,        END }) \
+    INST(ROR,   REG8,        IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(0), ImplMod(11), OPCODE(001),                             RM,              END }) \
+    INST(ROR,   REG16,       IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(1), ImplMod(11), OPCODE(001),                             RM,              END }) \
+    INST(ROR,   REG8,        REG8,        { OPCODE(110100),                       ImplV(1), ImplW(0), ImplMod(11), OPCODE(001),                             RM,              END }) \
+    INST(ROR,   REG16,       REG8,        { OPCODE(110100),                       ImplV(1), ImplW(1), ImplMod(11), OPCODE(001),                             RM,              END }) \
+    INST(ROR,   MEM,         IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), W,        MOD,         OPCODE(001),                             RM, DISP,        END }) \
+    INST(ROR,   MEM,         REG8,        { OPCODE(110100),                       ImplV(1), W,        MOD,         OPCODE(001),                             RM, DISP,        END }) \
+    INST(RCL,   REG8,        IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(0), ImplMod(11), OPCODE(010),                             RM,              END }) \
+    INST(RCL,   REG16,       IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(1), ImplMod(11), OPCODE(010),                             RM,              END }) \
+    INST(RCL,   REG8,        REG8,        { OPCODE(110100),                       ImplV(1), ImplW(0), ImplMod(11), OPCODE(010),                             RM,              END }) \
+    INST(RCL,   REG16,       REG8,        { OPCODE(110100),                       ImplV(1), ImplW(1), ImplMod(11), OPCODE(010),                             RM,              END }) \
+    INST(RCL,   MEM,         IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), W,        MOD,         OPCODE(010),                             RM, DISP,        END }) \
+    INST(RCL,   MEM,         REG8,        { OPCODE(110100),                       ImplV(1), W,        MOD,         OPCODE(010),                             RM, DISP,        END }) \
+    INST(RCR,   REG8,        IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(0), ImplMod(11), OPCODE(011),                             RM,              END }) \
+    INST(RCR,   REG16,       IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), ImplW(1), ImplMod(11), OPCODE(011),                             RM,              END }) \
+    INST(RCR,   REG8,        REG8,        { OPCODE(110100),                       ImplV(1), ImplW(0), ImplMod(11), OPCODE(011),                             RM,              END }) \
+    INST(RCR,   REG16,       REG8,        { OPCODE(110100),                       ImplV(1), ImplW(1), ImplMod(11), OPCODE(011),                             RM,              END }) \
+    INST(RCR,   MEM,         IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), W,        MOD,         OPCODE(011),                             RM, DISP,        END }) \
+    INST(RCR,   MEM,         REG8,        { OPCODE(110100),                       ImplV(1), W,        MOD,         OPCODE(011),                             RM, DISP,        END }) \
     // TODO: shl instruction: check for immediate is not enough, to be valid the number must be exactly 1, check for REG8 is not enough, to be valid the register must be cl
 
 #endif // TABLES_H

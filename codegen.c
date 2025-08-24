@@ -49,7 +49,7 @@ codegen(void)
             {
                 InstField field = inst.inst_fields[j];
                 if (field.id == INST_OPCODE  || field.id == INST_ImplD || field.id == INST_ImplW  ||
-                    field.id == INST_ImplMod || field.id == INST_ImplS)
+                    field.id == INST_ImplMod || field.id == INST_ImplS || field.id == INST_ImplV)
                 {
                     enc.encoding <<=  field.bitlen;
                     enc.encoding |= field.value;
