@@ -101,6 +101,20 @@ struct MapLabel {
     u64         bucket_count;
 };
 
+// Data structure for the patching of addresses
+typedef struct AddrToPatch AddrToPatch;
+struct AddrToPatch {
+    String labelname;
+    u64    inst_pointer;
+};
+
+typedef struct ListAddrToPatch ListAddrToPatch;
+struct ListAddrToPatch {
+    AddrToPatch *addr_to_patch;
+    u64          cnt;
+    u64          len;
+};
+
 /* Look up table for getting encoding of REG field starting from TokenKind (table 4.9 of Intel manual) */
 u8 reg_field_lut[] = {
 #define ENTRY(id, name, reg_encoding, ...) [Glue(TOK_, id)] = reg_encoding,
@@ -178,6 +192,7 @@ internal void     maplabel_pop(MapLabel *maplabel, String labelname);
 
 u64             g_instruction_pointer = 0;
 InstructionData instruction_data = {0};
-MapLabel        g_map_label;
+MapLabel        g_map_label = {0};
+ListAddrToPatch list_addrtopatch = {0};
 
 #endif // PARSER_H

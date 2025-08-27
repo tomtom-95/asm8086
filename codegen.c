@@ -16,6 +16,11 @@ encode_sr(Operand operand)
 InstEncoding
 codegen(void)
 {
+    if (instruction_data.mnemonic == TOK_NULL)
+    {
+        return (InstEncoding){0};
+    }
+
     InstEncoding enc = {0};
 
     for (u64 i = 0; i < ArrayCount(inst_table_keys); ++i)
@@ -312,17 +317,30 @@ codegen(void)
                     String labelname = instruction_data.dst.operand.label;
 
                     u64 idx = maplabel_find(&g_map_label, labelname);
-                    assert(idx != 0);
+                    if (idx == 0)
+                    {
+                        AddrToPatch addr = {
+                            .inst_pointer = g_instruction_pointer + 1,
+                            .labelname    = labelname
+                        };
 
-                    Label label = g_map_label.collision_array[idx].label;
+                        list_addrtopatch_add(&list_addrtopatch, addr);
+
+                        enc.encoding <<= 16;
+                        enc.bitlen += 16;
+                    }
+                    else
+                    {
+                        Label label = g_map_label.collision_array[idx].label;
                     
-                    s16 diff = (s16)label.pos - (s16)(g_instruction_pointer + 3);
+                        s16 diff = (s16)label.pos - (s16)(g_instruction_pointer + 3);
 
-                    enc.encoding <<= 8;
-                    enc.encoding |= (u8)(((u16)diff) & 0xff);
-                    enc.encoding <<= 8;
-                    enc.encoding |= (u8)((((u16)diff) >> 8) & 0xff);
-                    enc.bitlen += 16;
+                        enc.encoding <<= 8;
+                        enc.encoding |= (u8)(((u16)diff) & 0xff);
+                        enc.encoding <<= 8;
+                        enc.encoding |= (u8)((((u16)diff) >> 8) & 0xff);
+                        enc.bitlen += 16;
+                    }
                 }
             } // for (u64 j = 0; inst.inst_fields[j].id != INST_END; ++j)
 

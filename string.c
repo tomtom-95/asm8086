@@ -81,19 +81,18 @@ string(u8 *str, u64 size)
 String
 push_string_copy(Arena *arena, String s)
 {
-    String str;
-    str.len = s.len;
-    str.str = arena_push(arena, str.len);
+    String str = { .str = push_array_no_zero_aligned(&arena, u8, s.len, 1), .len = s.len };
     memcpy(str.str, s.str, s.len);
 
-    return(str);
+    return str;
 }
 
 String
 push_string_cat(Arena *arena, String s1, String s2)
 {
     u64 len = s1.len + s2.len;
-    String str = { .str = arena_push(arena, len), .len = len };
+
+    String str = { .str = push_array_no_zero_aligned(&arena, u8, len, 1), .len = len };
     memcpy(str.str, s1.str, s1.len);
     memcpy(str.str + s1.len, s2.str, s2.len);
 
@@ -117,7 +116,7 @@ cstring_copy(u8 *dst, u8 *src)
 u8 *
 cstring_from_string(Arena *arena, String string)
 {
-    u8 *cstring = arena_push(arena, string.len + 1);
+    u8 *cstring = push_array_no_zero_aligned(&arena, u8, string.len + 1, 1);
     memcpy(cstring, string.str, string.len);
     cstring[string.len] = '\0';
 
@@ -157,9 +156,11 @@ string_list_push(Arena *arena, StringList *list, String str)
     StringNode **node = &(list->head);
 
     while (*node)
+    {
         node = &((*node)->next);
+    }
 
-    *node = arena_push(arena, sizeof(StringNode));
+    *node = push_array_no_zero(&arena, StringNode, 1);
     (*node)->str = str;
     ++(list->len);
 
@@ -170,7 +171,8 @@ StringNode *
 string_list_find(StringList *list, String str)
 {
     StringNode *node = list->head;
-    while (node) {
+    while (node)
+    {
         if (string_cmp(node->str, str))
             return node;
         else

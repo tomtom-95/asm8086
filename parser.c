@@ -88,6 +88,7 @@ parse_line_(TokenList *token_list, u64 *idx)
     while (parse_terminal(token_list, idx, TOK_EOL))
     {
         printf("Skipping empty line\n");
+        return true;
     }
 
     u64 cursor = *idx;
@@ -674,8 +675,8 @@ internal MapLabel
 maplabel_init(Arena *arena, u64 bucket_count)
 {
     return (MapLabel){
-        .index_array = arena_push(arena, sizeof(Label) * bucket_count),
-        .collision_array = arena_push(arena, MegaByte(1)),
+        .index_array = push_array(&arena, u64, bucket_count),
+        .collision_array = push_array(&arena, Label, 100), // Note: change 100 to a bigger number to handle more labels
         .offset = 0, .first_free = 0, .bucket_count = bucket_count
     };
 }
@@ -709,7 +710,7 @@ maplabel_insert(MapLabel *maplabel, Label label)
     u64 free_slot = maplabel->first_free;
     if (free_slot)
     {
-        maplabel->first_free = maplabel->collision_array[maplabel->first_free].next;
+        maplabel->first_free = maplabel->collision_array[free_slot].next;
     }
     else
     {
@@ -746,4 +747,20 @@ maplabel_pop(MapLabel *maplabel, String labelname)
             idx_ptr = &maplabel->collision_array[idx].next;
         }
     }
+}
+
+internal ListAddrToPatch
+list_addrtopatch_init(Arena *arena, u64 len)
+{
+    return (ListAddrToPatch){
+        .addr_to_patch = push_array(&arena, AddrToPatch, len),
+        .cnt = 0, .len = len
+    };
+}
+
+internal void
+list_addrtopatch_add(ListAddrToPatch *list, AddrToPatch addr)
+{
+    assert(list->cnt != list->len);
+    list->addr_to_patch[list->cnt++] = addr;
 }

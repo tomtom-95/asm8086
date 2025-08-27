@@ -211,8 +211,7 @@
     INST(ADD,   MEM,         REG8,        { OPCODE(000000),                     ImplD(0),           ImplW(0), MOD,                            REG,                  RM, DISP,        END }) \
     INST(ADD,   MEM,         REG16,       { OPCODE(000000),                     ImplD(0),           ImplW(1), MOD,                            REG,                  RM, DISP,        END }) \
     INST(ADD,   REG8,        IMMEDIATE8,  { OPCODE(100000),           ImplS(0),                     ImplW(0), MOD,         OPCODE(000),                             RM, DISP, IMM8,  END }) \
-    INST(ADD,   REG16,       IMMEDIATE16, { OPCODE(100000),           ImplS(0),                     ImplW(1), MOD,         OPCODE(000),                             RM, DISP, IMM16, END }) \
-    INST(ADD,   REG16,       IMMEDIATE8,  { OPCODE(100000),           ImplS(1),                     ImplW(1), MOD,         OPCODE(000),                             RM, DISP, IMM8,  END }) \
+    INST(ADD,   REG16,       IMMEDIATE,   { OPCODE(100000),           ImplS(0),                     ImplW(1), MOD,         OPCODE(000),                             RM, DISP, IMM16, END }) \
     INST(ADC,   REG8,        REG8,        { OPCODE(000100),                     ImplD(0),           ImplW(0), MOD,                            REG,                  RM, DISP,        END }) \
     INST(ADC,   REG16,       REG16,       { OPCODE(000100),                     ImplD(0),           ImplW(1), MOD,                            REG,                  RM, DISP,        END }) \
     INST(ADC,   ACC8,        IMMEDIATE8,  { OPCODE(0001010),                                        ImplW(0),                                                                 IMM8,  END }) \

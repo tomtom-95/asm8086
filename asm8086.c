@@ -13,7 +13,6 @@
 
 int main(void)
 {
-    // TODO: base layer for reading file and do stuff with the file OS independently
     Arena *arena = arena_alloc(MegaByte(1));
 
     FILE *file_input = fopen("./resources/test_one_instruction.asm", "r");
@@ -23,7 +22,7 @@ int main(void)
     u64 file_len = (u64)ftell(file_input);
     rewind(file_input);
 
-    String input = { .str = arena_push(arena, file_len), .len = file_len };
+    String input = { .str = push_array(&arena, u8, file_len), .len = file_len };
     assert(fread(input.str, 1, file_len, file_input) == file_len);
     fclose(file_input);
 
@@ -38,12 +37,12 @@ int main(void)
         return 1;
     }
 
-    Arena *output_arena = arena_alloc(MegaByte(10));
+    Arena *codegen_arena = arena_alloc(MegaByte(10));
+    g_map_label          = maplabel_init(codegen_arena, 1);
+    list_addrtopatch     = list_addrtopatch_init(codegen_arena, 100);
 
-    g_map_label  = maplabel_init(output_arena, 1);
-
-    u64 encoding_start_pos = output_arena->pos;
-    u8 *encoding_start_ptr = (u8 *)output_arena + output_arena->base + encoding_start_pos;
+    u64 encoding_start_pos = codegen_arena->pos;
+    u8 *encoding_start_ptr = (u8 *)codegen_arena + encoding_start_pos;
 
     // TODO: now I want to divide the job in two pass:
     // in the first pass I can generate code for all the instruction except for jump instruction
@@ -62,7 +61,7 @@ int main(void)
 
         u64 num_bytes = enc.bitlen / 8;
         g_instruction_pointer += num_bytes;
-        u8 *p = arena_push(output_arena, num_bytes);
+        u8 *p = push_array_no_zero_aligned(&codegen_arena, u8, num_bytes, 1);
 
         for (u64 i = 0; i < num_bytes; ++i)
         {
@@ -73,9 +72,37 @@ int main(void)
 
         printf("Encoding: 0x%" PRIx64 "\n", enc.encoding); 
     }
-    
-    fwrite(encoding_start_ptr, output_arena->pos - encoding_start_pos, 1, file_output);
 
+    /*
+        Patching of addresses for jump instruction that could not be resolved during the first pass of codegen
+        Imagine this situation: 
+            mov si, bx
+            jmp mylabel
+            mylabel:
+                mov dh, al
+        Right now I am emitting code as soon as a line is parsed (parse mov si, bx -> emit x89de)
+        This means that when I arrive at jmp label I still do not know where mylabel is exactly
+        What I do is to emit the opcode of the jmp instruction (1 byte) and record the fact that
+        2 bytes must be patched with mylabel relative address (absolute addr of mylabel - absolute addr of jmp instruction)
+    */
+    for (u64 i = 0; i < list_addrtopatch.cnt; ++i)
+    {
+        AddrToPatch addr = list_addrtopatch.addr_to_patch[i];
+        u64 idx = maplabel_find(&g_map_label, addr.labelname);
+
+        u16 address_to_write = (u16)g_map_label.collision_array[idx].label.pos;
+        u16 start_write = addr.inst_pointer;
+        assert(address_to_write > start_write);
+
+        // Note: -2 is here because the address must be calculated relative to the position of the instruction pointer after the jump isntruction!
+        u16 diff = address_to_write - start_write - 2;
+
+        u8 *p = (u8 *)codegen_arena + encoding_start_pos + start_write;
+        *p = diff & 0xff;
+        *(p + 1) = (diff >> 8) & 0xff;
+    }
+    
+    fwrite(encoding_start_ptr, codegen_arena->pos - encoding_start_pos, 1, file_output);
     fclose(file_output);
 
     return 0;

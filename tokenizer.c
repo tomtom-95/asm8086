@@ -15,10 +15,8 @@ char_is_space(u8 c)
 TokenList
 token_list_init(Arena *arena)
 {
-    Token *token = (Token *)((u8 *)arena + arena->base + arena->pos);
-
-    TokenList token_list = { .arena = arena, .cnt = 0, .token = token };
-    token_list_add(&token_list, TOK_NULL, (String){0}, 0);
+    Token *token = push_array(&arena, Token, 1);
+    TokenList token_list = { .arena = arena, .cnt = 1, .token = token };
 
     return token_list;
 }
@@ -26,7 +24,7 @@ token_list_init(Arena *arena)
 void
 token_list_add(TokenList *token_list, TokenKind token_kind, String string, u64 num)
 {
-    Token *token = arena_push(token_list->arena, sizeof(Token));
+    Token *token = push_array(&token_list->arena, Token, 1);
 
     token->token_kind = token_kind;
     token->token_view = string;
@@ -37,7 +35,8 @@ token_list_add(TokenList *token_list, TokenKind token_kind, String string, u64 n
 void
 token_list_print(TokenList *token_list)
 {
-    for (u64 idx = 0; idx < token_list->cnt; ++idx) {
+    for (u64 idx = 0; idx < token_list->cnt; ++idx)
+    {
         string_print(token_string[(token_list->token + idx)->token_kind]);
     }
 }
@@ -75,13 +74,14 @@ peek_token(TokenList *token_list, String input, u64 idx)
             }
         }
 
-        if (token_kind == TOK_NULL) {
+        if (token_kind == TOK_NULL)
+        {
             token_kind = TOK_LABEL;
         }
     }
     else if (char_is_digit(ch, 10))
     {
-        while (char_is_digit(*(input.str + end), 10))
+        while (ch = *(input.str + end), 0 <= ch && ch < 128 && char_is_digit(*(input.str + end), 10))
             ++end;
 
         string_view = (String){ .str = input.str + start, .len = end - start };
@@ -98,15 +98,18 @@ void
 tokenize(TokenList *token_list, String input)
 {
     u64 idx = 0;
-    while (idx < input.len) {
-
+    while (idx < input.len)
+    {
         while (char_is_space(*(input.str + idx)))
+        {
             ++idx;
+        }
 
         idx = peek_token(token_list, input, idx);
     }
 
-    if ((token_list->token + token_list->cnt)->token_kind != TOK_EOL) {
+    if ((token_list->token + token_list->cnt)->token_kind != TOK_EOL)
+    {
         // If the last line of the file does not have a '\n' add a
         // TOK_EOL anyway to make the parser happy later
         token_list_add(token_list, TOK_EOL, (String){0}, 0);

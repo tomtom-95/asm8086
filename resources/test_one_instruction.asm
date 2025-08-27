@@ -1,4 +1,4 @@
 mov si, bx
 label:
-mov dh, al
+    mov dh, al
 jmp label
