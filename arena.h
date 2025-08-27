@@ -3,11 +3,25 @@
 
 #include "utils.c"
 
+#define AlignOf(T) __alignof__(T)
+
+// #if COMPILER_MSVC
+// #define AlignOf(T) __alignof(T)
+// #elif COMPILER_CLANG
+// #define AlignOf(T) __alignof(T)
+// #elif COMPILER_GCC
+// #define AlignOf(T) __alignof__(T)
+// #elif GNUC
+// #define AlignOf(T) alignof(T)
+// #else
+// #error AlignOf not defined for this compiler.
+// #endif
+
 typedef struct Arena Arena;
 struct Arena {
-    u64 base;
-    u64 pos;
-    u64 size;
+    Arena *prev;
+    u64    pos;
+    u64    size;
 };
 
 typedef struct Ctx Ctx;
@@ -23,19 +37,27 @@ struct Temp {
 
 Ctx *ctx_local;
 
-Arena *arena_alloc(u64 size);
-void arena_dealloc(Arena *arena);
+internal Arena *arena_alloc(u64 size);
+internal void   arena_release(Arena *arena);
 
-void ctx_init(Ctx *ctx);
+internal void   ctx_init(Ctx *ctx);
 
-void *arena_push(Arena *arena, u64 size);
-void arena_pop(Arena *arena, u64 size);
-void arena_clear(Arena *arena);
+internal u64    arena_pos(Arena *arena);
+internal void  *arena_push(Arena **arena, u64 size, u64 align);
+internal void   arena_clear(Arena **arena);
 
-Temp temp_begin(Arena *arena);
-Temp scratch_get(Arena **conflicts, u64 count);
+internal Temp   temp_begin(Arena *arena);
+internal Temp   scratch_get(Arena **conflicts, u64 count);
 
-void temp_end(Temp temp);
-void scratch_release(Temp temp);
+internal void   temp_end(Temp temp);
+internal void   scratch_release(Temp temp);
+
+#define MemoryZero(s,z)       memset((s),0,(z))
+
+//- rjf: push helper macros
+#define push_array_no_zero_aligned(a, T, c, align) (T *)arena_push((a), sizeof(T)*(c), (align))
+#define push_array_aligned(a, T, c, align) (T *)MemoryZero(push_array_no_zero_aligned(a, T, c, align), sizeof(T)*(c))
+#define push_array_no_zero(a, T, c) push_array_no_zero_aligned(a, T, c, Max(8, AlignOf(T)))
+#define push_array(a, T, c) push_array_aligned(a, T, c, Max(8, AlignOf(T)))
 
 #endif // ARENA_H

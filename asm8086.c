@@ -43,8 +43,12 @@ int main(void)
     g_map_label  = maplabel_init(output_arena, 1);
 
     u64 encoding_start_pos = output_arena->pos;
-    u8 *encoding_start_ptr = (u8 *)output_arena + output_arena->base + output_arena->pos;
+    u8 *encoding_start_ptr = (u8 *)output_arena + output_arena->base + encoding_start_pos;
 
+    // TODO: now I want to divide the job in two pass:
+    // in the first pass I can generate code for all the instruction except for jump instruction
+    // I will always encode the jmp instruction as 3 bytes
+    // In the second pass I will encode the jmp instruction by inserting the necessary addresses
     u64 idx = 1;
     while (idx < token_list.cnt)
     {

@@ -25,7 +25,7 @@ CFLAGS=(
   -Wshadow -Wvla -Wwrite-strings -Wstrict-prototypes -Wold-style-definition
   -Wredundant-decls -Wnested-externs -Wmissing-include-dirs
   -Wno-gnu-binary-literal -Wno-c23-extensions -Wno-unused-variable
-  -fsanitize=address
+  -fsanitize=address -fsanitize=undefined
   -g3 -O0 -std=c99
 )
 # -Werror
@@ -92,6 +92,12 @@ teststring() {
     echo "   ✔️  Saved to test_string"
 }
 
+testarena() {
+    echo "==> Compiling test_arena"
+    "$CC" "${CFLAGS[@]}" $INCLUDE -g -o "$OUT_DIR/test_arena" "./tests/test_arena.c"
+    echo "   ✔️  Saved to test_string"
+}
+
 clean() {
   echo "==> Cleaning generated files"
   rm -rf "$NASMFILENAME" "$BINFILENAME" "$EXECNAME" "$DEBUGNAME" "$PPFILENAME"
@@ -109,6 +115,7 @@ case "${1:-build}" in
   dummytest)   dummytest  ;;
   testparser)  testparser ;;
   test_string) teststring ;;
+  testarena)   testarena  ;;
   clean)       clean      ;;
   *)
     echo "Usage: $0 [build|run|test|pp|dummytest|clean]"
