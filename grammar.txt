@@ -35,11 +35,15 @@ operand
     : register_general
     | eaddr__
     | register_segment
+    | pointer
     | imm
     | LABEL
 
 imm
     : opr_math? (NUM | NUM_ZERO)
+
+pointer
+    NUM COLON NUM
 
 prefix
     : LOCK

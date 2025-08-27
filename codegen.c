@@ -234,6 +234,13 @@ codegen(void)
 
                     s16 imm = imm_operand.operand.immediate;
 
+                    if (instruction_data.mnemonic == TOK_JMP)
+                    {
+                        // TODO: this is because I always encode the jump instruction in 3 bytes.
+                        //       The code would break if this is not the case.
+                        imm -= (g_instruction_pointer + 3);
+                    }
+
                     enc.encoding <<= 8;
                     enc.encoding |= (u8)(((u16)imm) & 0xff);
                     enc.encoding <<= 8;
@@ -321,7 +328,8 @@ codegen(void)
                     {
                         AddrToPatch addr = {
                             .inst_pointer = g_instruction_pointer + 1,
-                            .labelname    = labelname
+                            .labelname    = labelname,
+                            .bytelen      = 2,
                         };
 
                         list_addrtopatch_add(&list_addrtopatch, addr);
@@ -332,7 +340,7 @@ codegen(void)
                     else
                     {
                         Label label = g_map_label.collision_array[idx].label;
-                    
+
                         s16 diff = (s16)label.pos - (s16)(g_instruction_pointer + 3);
 
                         enc.encoding <<= 8;
@@ -341,6 +349,57 @@ codegen(void)
                         enc.encoding |= (u8)((((u16)diff) >> 8) & 0xff);
                         enc.bitlen += 16;
                     }
+                }
+                else if (field.id == INST_LBL8)
+                {
+                    String labelname = instruction_data.dst.operand.label;
+
+                    u64 idx = maplabel_find(&g_map_label, labelname);
+                    if (idx == 0)
+                    {
+                        AddrToPatch addr = {
+                            .inst_pointer = g_instruction_pointer + 1,
+                            .labelname    = labelname,
+                            .bytelen      = 1
+                        };
+
+                        list_addrtopatch_add(&list_addrtopatch, addr);
+
+                        enc.encoding <<= 8;
+                        enc.bitlen += 8;
+                    }
+                    else
+                    {
+                        Label label = g_map_label.collision_array[idx].label;
+
+                        s8 diff = (s16)label.pos - (s16)(g_instruction_pointer + 2);
+
+                        enc.encoding <<= 8;
+                        enc.encoding |= (u8)(((u16)diff) & 0xff);
+                        enc.bitlen += 8;
+                    }
+                }
+                else if (field.id == INST_IP)
+                {
+                    Pointer pointer = instruction_data.dst.operand.pointer;    
+                    s16 offset      = pointer.offset;
+
+                    enc.encoding <<= 8;
+                    enc.encoding |= (u8)((u16)offset & 0xff);
+                    enc.encoding <<= 8;
+                    enc.encoding |= (u8)((((u16)offset) >> 8) & 0xff);
+                    enc.bitlen += 16;
+                }
+                else if (field.id == INST_CODE_SEG)
+                {
+                    Pointer pointer = instruction_data.dst.operand.pointer;    
+                    s16 selector    = pointer.selector;
+
+                    enc.encoding <<= 8;
+                    enc.encoding |= (u8)((u16)selector & 0xff);
+                    enc.encoding <<= 8;
+                    enc.encoding |= (u8)((((u16)selector) >> 8) & 0xff);
+                    enc.bitlen += 16;
                 }
             } // for (u64 j = 0; inst.inst_fields[j].id != INST_END; ++j)
 

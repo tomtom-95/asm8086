@@ -88,18 +88,25 @@ int main(void)
     for (u64 i = 0; i < list_addrtopatch.cnt; ++i)
     {
         AddrToPatch addr = list_addrtopatch.addr_to_patch[i];
-        u64 idx = maplabel_find(&g_map_label, addr.labelname);
+        u64 map_idx = maplabel_find(&g_map_label, addr.labelname);
 
-        u16 address_to_write = (u16)g_map_label.collision_array[idx].label.pos;
+        u16 address_to_write = (u16)g_map_label.collision_array[map_idx].label.pos;
         u16 start_write = addr.inst_pointer;
         assert(address_to_write > start_write);
 
-        // Note: -2 is here because the address must be calculated relative to the position of the instruction pointer after the jump isntruction!
-        u16 diff = address_to_write - start_write - 2;
+        u16 diff = address_to_write - (start_write + addr.bytelen);
 
         u8 *p = (u8 *)codegen_arena + encoding_start_pos + start_write;
-        *p = diff & 0xff;
-        *(p + 1) = (diff >> 8) & 0xff;
+
+        if (addr.bytelen == 1)
+        {
+            *p = diff & 0xff;
+        }
+        else if (addr.bytelen == 2)
+        {
+            *p = diff & 0xff;
+            *(p + 1) = (diff >> 8) & 0xff;
+        }
     }
     
     fwrite(encoding_start_ptr, codegen_arena->pos - encoding_start_pos, 1, file_output);

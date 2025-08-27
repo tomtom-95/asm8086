@@ -43,6 +43,7 @@ typedef enum OperandKind
     OP_DADDR        = (1u << 9),
     OP_SEGREG       = (1u << 10),
     OP_LABEL        = (1u << 11),
+    OP_POINTER      = (1u << 12)
 }
 OperandKind;
 
@@ -57,6 +58,13 @@ struct EffectiveAddress {
     u64       rm;
 };
 
+// Note: A terrible name 
+typedef struct Pointer Pointer;
+struct Pointer {
+    s16 selector; // A 16-bit selector for the target code segment
+    s16 offset;   // A 16-bit or 32-bit offset for the instruction within the target segment
+};
+
 typedef struct Operand Operand;
 struct Operand {
     OperandKind      operand_kind;
@@ -65,6 +73,7 @@ struct Operand {
     EffectiveAddress effective_address;
     s16              immediate;
     String           label;
+    Pointer          pointer;
 };
 
 typedef struct Operand_ Operand_;
@@ -106,6 +115,7 @@ typedef struct AddrToPatch AddrToPatch;
 struct AddrToPatch {
     String labelname;
     u64    inst_pointer;
+    u8     bytelen;
 };
 
 typedef struct ListAddrToPatch ListAddrToPatch;
@@ -165,6 +175,7 @@ internal bool parse_opr_prefix(TokenList *token_list, u64 *idx, PrefixOperand *p
 internal bool parse_prefix(TokenList *token_list, u64 *idx);
 internal bool parse_mnemonic(TokenList *token_list, u64 *idx, TokenKind *mnemonic);
 internal bool parse_operand(TokenList *token_list, u64 *idx, Operand *operand);
+internal bool parse_pointer(TokenList *token_list, u64 *idx, Pointer *pointer);
 internal bool parse_register_general(TokenList *token_list, u64 *idx, TokenKind *reg_gen);
 
 internal bool parse_eaddr__(TokenList *token_list, u64 *idx, EffectiveAddress *eaddr);

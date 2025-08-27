@@ -275,7 +275,7 @@ parse_mnemonic(TokenList *token_list, u64 *idx, TokenKind *mnemonic)
     TokenKind token_kind = token_list->token[*idx].token_kind;
 
     // TODO: every time a new mnemonic is add this range must be changed (ugly)
-    if (TOK_MOV <= token_kind && token_kind <= TOK_JMP)
+    if (TOK_MOV <= token_kind && token_kind <= TOK_JE)
     {
         *mnemonic = token_kind;
         ++(*idx);
@@ -326,6 +326,16 @@ parse_operand(TokenList *token_list, u64 *idx, Operand *operand)
         return true;
     }
 
+    Pointer pointer = {0};
+    if (parse_pointer(token_list, idx, &pointer))
+    {
+        operand->operand_kind     = OP_POINTER;
+        operand->pointer.offset   = pointer.offset;
+        operand->pointer.selector = pointer.selector;
+
+        return true;
+    }
+
     s16 imm = 0;
     if (parse_imm(token_list, idx, &imm))
     {
@@ -349,6 +359,26 @@ parse_operand(TokenList *token_list, u64 *idx, Operand *operand)
 
         return true;
     }
+
+    return false;
+}
+
+internal bool
+parse_pointer(TokenList *token_list, u64 *idx, Pointer *pointer)
+{
+    u64 cursor = *idx;
+
+    if (parse_terminal(token_list, idx, TOK_NUM) &&
+        parse_terminal(token_list, idx, TOK_COLON) &&
+        parse_terminal(token_list, idx, TOK_NUM))
+    {
+        pointer->offset   = token_list->token[*idx - 1].num; 
+        pointer->selector = token_list->token[*idx - 3].num;
+
+        return true;
+    }
+
+    *idx = cursor;
 
     return false;
 }

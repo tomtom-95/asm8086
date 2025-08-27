@@ -46,6 +46,7 @@
     ENTRY(RCL,   rcl)   \
     ENTRY(RCR,   rcr)   \
     ENTRY(JMP,   jmp)   \
+    ENTRY(JE,    je)    \
 
 // Chapter 4, Table 4.9: REG Field Encoding
 // NOTE: the same table applies in MOD=11 case when encoding R/M field (see table 4.10)
@@ -112,6 +113,8 @@
 
 #define OPCODE(bits)   ENTRY(OPCODE,   bits, sizeof(#bits) - 1)
 #define LBL            ENTRY(LBL,      0,    0                )
+#define LBL8           ENTRY(LBL8,     0,    8                )
+#define LBL16          ENTRY(LBL16,    0,    16               )
 #define MOD            ENTRY(MOD,      0,    2                )
 #define REG            ENTRY(REG,      0,    3                )
 #define SR             ENTRY(SR,       0,    2                )
@@ -121,6 +124,8 @@
 #define IMM8           ENTRY(IMM8,     0,    8                )
 #define IMM16          ENTRY(IMM16,    0,    16               )
 #define ADDR           ENTRY(ADDR,     0,    0                )
+#define IP             ENTRY(IP,       0,    0                )
+#define CODE_SEG       ENTRY(CODE_SEG, 0,    0                )
 #define D              ENTRY(D,        0,    1                )
 #define W              ENTRY(W,        0,    1                )
 #define S              ENTRY(S,        0,    1                )
@@ -147,6 +152,10 @@
     W          \
     S          \
     LBL        \
+    LBL8       \
+    LBL16      \
+    IP         \
+    CODE_SEG   \
     END        \
     ImplD(0)   \
     ImplW(0)   \
@@ -341,6 +350,13 @@
     INST(RCR,   MEM,         IMMEDIATE8,  { OPCODE(110100),                       ImplV(0), W,        MOD,         OPCODE(011),                             RM, DISP,                END }) \
     INST(RCR,   MEM,         REG8,        { OPCODE(110100),                       ImplV(1), W,        MOD,         OPCODE(011),                             RM, DISP,                END }) \
     INST(JMP,   LABEL,       NONE,        { OPCODE(11101001), LBL, END }) \
+    INST(JMP,   IMMEDIATE,   NONE,        { OPCODE(11101001), IMM16, END }) \
+    INST(JMP,   REG16,       NONE,        { OPCODE(11111111), ImplMod(11), OPCODE(100), RM, END }) \
+    INST(JMP,   MEM,         NONE,        { OPCODE(11111111), MOD, OPCODE(100), RM, DISP, END }) \
+    INST(JMP,   POINTER,     NONE,        { OPCODE(11101010), IP, CODE_SEG, END }) \
+    INST(JE,    LABEL,       NONE,        { OPCODE(01110100), LBL8, END }) \
+    INST(JE,    IMMEDIATE,   NONE,        { OPCODE(01110100), IMM8, END }) \
+
     // TODO: shl instruction: check for immediate is not enough, to be valid the number must be exactly 1, check for REG8 is not enough, to be valid the register must be cl
 
 #endif // TABLES_H

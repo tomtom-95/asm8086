@@ -1,4 +1,6 @@
-mov si, bx
+jmp ax
+jmp di
+jmp [12]
+jmp [4395]
 label:
-    mov dh, al
-jmp label
+je label
